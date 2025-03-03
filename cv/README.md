@@ -8,10 +8,11 @@
 ## Experiments
 Asset using computer vision model comparing to buy-and-hold strategy
 ### 中租，5871
-- Conformer: [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_CV/Models/Model_Result/Conformer-CNN_class2_5871_backtest.png) 
-- Resnet: [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_CV/Models/Model_Result/ResNet_class2_5871_backtest.png) 
-- Conformer Resnet: [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_CV/Models/Model_Result/Conformer-Resnet_class2_5871_backtest.png) 
-- VisionTransformer: [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_CV/Models/Model_Result/Vision-Transformer_class2_5871_backtest.png) 
+- Conformer: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Models/Model_Result/Conformer-CNN_class2_5871_backtest.png) 
+- Resnet: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Models/Model_Result/Conformer-Resnet_class2_5871_backtest.png) 
+- Conformer Resnet: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Models/Model_Result/ResNet_class2_5871_backtest.png) 
+- VisionTransformer: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Models/Model_Result/Vision-Transformer_class2_5871_backtest.png)
+- ViT Pretrained model: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Model-Pretrains/Pretrains/Result/ViT_b_16_class2_5871_backtest.png) 
 ## Data Preprocess
 1. Download data with Open, Close, High, Low, Volume
 2. Transform to the percentile change
