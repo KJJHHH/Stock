@@ -1,4 +1,5 @@
 # Computer Vision Methods to Predict Stock 
+2023
 ## Models
 - [x] ResNet
 - [x] Conformer
@@ -13,6 +14,8 @@ Asset using computer vision model comparing to buy-and-hold strategy
 - Conformer Resnet: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Models/Model_Result/ResNet_class2_5871_backtest.png) 
 - VisionTransformer: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Models/Model_Result/Vision-Transformer_class2_5871_backtest.png)
 - ViT Pretrained model: [Asset backtest](https://github.com/KJJHHH/Stock/blob/main/cv/Model-Pretrains/Pretrains/Result/ViT_b_16_class2_5871_backtest.png) 
+### 玉山金控
+...
 ## Data Preprocess
 1. Download data with Open, Close, High, Low, Volume
 2. Transform to the percentile change
