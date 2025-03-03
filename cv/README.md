@@ -4,7 +4,7 @@
 - [x] Conformer
 - [x] Conformer + ResNet (ConRes)
 - [x] VisionTransformer
-- [ ] Pretrained VisionTransformer
+- [x] Pretrained VisionTransformer
 ## Experiments
 Asset using computer vision model comparing to buy-and-hold strategy
 ### 中租，5871
