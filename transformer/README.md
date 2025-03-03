@@ -5,9 +5,11 @@ Predict the daily percentile change for open and close price
 ## Experiments
 ### Performance with Transformer
 Asset using transformer model comparing to buy-and-hold strategy
-- [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_Transformer/Model-Transformer/Model_Result/TransEnDecoder-Window10-EL1-DL1-Hid128-NHead1_class2_5871_backtest.png) | 中租，5871
-- [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_Transformer/Model-Transformer/Model_Result/TransEnDecoder-Window10-EL1-DL1-Hid128-NHead1_class2_2454_backtest.png) | 聯發科技，2454
-- [Asset](https://github.com/KJJHHH/Stocks/blob/main/Individual_Transformer/Model-Transformer/Model_Result/TransEnDecoder-Window10-EL1-DL1-Hid128-NHead1_class2_2884_backtest.png) | 玉山金融控股公司，2884
+- [Asset result](https://github.com/KJJHHH/Stock/blob/main/transformer/Model-Transformer/Model_Result/TransEnDecoder-Window10-EL1-DL1-Hid128-NHead1_class2_5871_backtest.png) | 中租，5871
+- [Asset result](https://github.com/KJJHHH/Stock/blob/main/transformer/Model-Transformer/Model_Result/TransEnDecoder-Window10-EL1-DL1-Hid128-NHead1_class2_2454_backtest.png) | 聯發科技，2454
+- [Asset result](https://github.com/KJJHHH/Stock/blob/main/transformer/Model-Transformer/Model_Result/TransEnDecoder-Window10-EL1-DL1-Hid128-NHead1_class2_2884_backtest.png) | 玉山金控，2884
+### Performance with Decoder only
+[Decoder-only for time series](https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/)
 
 ## Models 
 - [x] Transformer-Encoder-Decoder
