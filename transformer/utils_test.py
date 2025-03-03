@@ -5,7 +5,7 @@ from tqdm import tqdm
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def test_encoder(model, dataloader):
+def test_decoder(model, dataloader):
     
     s_pred = []
     s_true = []
