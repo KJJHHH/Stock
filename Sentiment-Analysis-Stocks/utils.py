@@ -5,6 +5,7 @@ import pandas as pd
 import datetime
 from googletrans import Translator
 import math
+from tqdm import tqdm
 
 
 # check device usage
@@ -16,25 +17,30 @@ def get_ram_usage():
     return psutil.virtual_memory().percent
 
 # translation
-def trans(text_list):
+def trans(text):
     translator = Translator(service_urls=[
       'translate.google.com',
       'translate.google.co.kr',
     ])
-    eng_texts = [translator.translate(i, dest='en').text for i in text_list]
+    
+    eng_texts = []
+    if text is not None:
+        translator.translate(text, dest='en')
+        # eng_texts.append(translator.translate(i, dest='en').text)
     return eng_texts
 
 #
 def prc_data(stock):
     prc = yf.download(stock)
-    prc["return"] = (prc["Adj Close"].shift(-1) - prc["Adj Close"])/prc["Adj Close"]
+    prc["return"] = (prc['Close', '2409.TW'].shift(-1) - prc['Close', '2409.TW'])/prc['Close', '2409.TW']
+    prc.columns = [col[0] for col in prc.columns]
     prc = prc.reset_index().rename(columns={"Date":"time"})
     prc.time = prc.time.dt.date
     return prc
 
 # read text data and transform time. here no missing data
 def get_text_data(filename):
-    with open(f'news/texts/{filename}.pk', 'rb') as f:
+    with open(filename, 'rb') as f:
         data = pickle.load(f)
     data.drop("index", axis=1, inplace=True)
     data.time = data.time.apply(lambda x: datetime.datetime.strptime(x, '%Y/%m/%d %H:%M')).dt.date
