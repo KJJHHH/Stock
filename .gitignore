@@ -1,5 +1,14 @@
-*.gitignore*
 differential_equation
 rl
 statistical
 Technical-Analysis
+
+*Old Versions*
+*DataLoader*
+*.pt*
+*.vscode*
+Temp
+Model-Transformer-FP16/
+Note.md
+__pycache__
+old/

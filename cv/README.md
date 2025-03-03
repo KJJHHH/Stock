@@ -1,5 +1,4 @@
 # Computer Vision Methods to Predict Stock 
-2023
 ## Models
 - [x] ResNet
 - [x] Conformer
