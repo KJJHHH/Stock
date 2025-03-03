@@ -32,7 +32,7 @@ def fetch_stock_price(stock_symbol, start_date, end_date):
 
 def window_x_y(df, num_class, window_size=100): # df: before split
     x1_list, y1_list, date = [], [], []
-    for i in tqdm(range(len(df)-window_size+1)): # Create data with window
+    for i in range(len(df)-window_size+1): # Create data with window
         window = df.iloc[i:i+window_size]  # Extract the window of data
         x1_values = window[['do', 'dh', 'dl', 'dc', 'dv', 'Close']].T.values  # Adjust column names as needed
         if num_class == 1:
@@ -46,9 +46,9 @@ def window_x_y(df, num_class, window_size=100): # df: before split
     y = np.array(y1_list)
     return x, y, date
 
-def get_src(df, num_class):    
-    x, y, date = window_x_y(df, num_class, 1)
-    src = x[:2000]
+def getSrc(df, num_class, src_size = 2000):    
+    x, y, date = window_x_y(df, num_class)
+    src = x[:src_size]
     return torch.tensor(src).to(dtype=torch.float32)   
 
 def process_x(x):
@@ -63,49 +63,25 @@ def process_x(x):
     X = torch.cat(X, dim=0)
     return X
 
-def train_test(X, y):
-    percentage = 95
-    num_numbers = int((percentage / 100) * len(X))
-    num_numbers = len(X) - 160
+def train_test(X, y, percentage_test):
+    test_size = int(percentage_test * len(X))
+    train_size = len(X) - test_size
+    x_train = X[:train_size]
+    x_test = X[train_size:]
+    y_train = y[:train_size]
+    y_test = y[train_size:]
+    return x_train, x_test, y_train, y_test, 
 
-    x_train = X[:num_numbers]
-    x_test = X[num_numbers:]
-    y_train = y[:num_numbers]
-    y_test = y[num_numbers:]
-    return x_train, x_test, y_train, y_test
-
-def train_valid(X, y):
-    percentage = 95
-    num_numbers = int((percentage / 100) * len(X))
-    num_numbers = len(X) - 160
-    
-    x_train = X[:num_numbers]
-    x_valid = X[num_numbers:]
-    y_train = y[:num_numbers]
-    y_valid = y[num_numbers:]
+def train_valid(X, y, percentage_valid):
+    valid_size = int(percentage_valid  * len(X))
+    train_size = len(X) - valid_size
+    x_train = X[:train_size]
+    x_valid = X[train_size:]
+    y_train = y[:train_size]
+    y_valid = y[train_size:]
     return x_train, x_valid, y_train, y_valid
 
 def loader(x, y, batch_size = 16):
     dataset = TensorDataset(x, y)
     dataloader = DataLoader(dataset, batch_size, shuffle=False, drop_last=True)
     return dataloader
-
-"""
-While mask in train, not process
-def mask_old(x):
-    # Specify the size of the square matrix
-    matrix_size = 100
-    channels = 5
-    batch = x.size(0)
-
-    # Create an empty tensor filled with zeros
-    mask = torch.zeros((matrix_size, matrix_size), dtype=torch.float)
-
-    # Fill the upper triangle with ones
-    for i in range(matrix_size):
-        for j in range(i, matrix_size):
-            mask[i, j] = 1
-    masks = mask.repeat(batch, 5, 1, 1)
-    masked_x = x * masks
-    return masked_x
-"""

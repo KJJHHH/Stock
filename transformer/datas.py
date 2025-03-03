@@ -9,13 +9,14 @@ warnings.filterwarnings("ignore")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def data(
-    stock: str = '2454.TW', 
+    stock_symbol: str = '2454.TW', 
     num_class: int = 2, 
     end_date: str = '2024-12-31',
     batch_size: int = 64,
     window: int = 10
     ):
-    stock_price_data = fetch_stock_price(stock_symbol=stock, start_date='2012-01-02',end_date=end_date)
+    
+    stock_price_data = fetch_stock_price(stock_symbol=stock_symbol, start_date='2012-01-02',end_date=end_date)
 
     # pctchange: (today - yesterday)/yesterday
     stock_price_data['do'] = stock_price_data['Open'].pct_change() * 100
@@ -28,8 +29,7 @@ def data(
     stock_price_data['do_1'] = stock_price_data['do'].shift(-1)
     stock_price_data['dc_1'] = stock_price_data['dc'].shift(-1)
     stock_price_data['doc_1'] = \
-        ((stock_price_data['Close'].shift(-1) - stock_price_data['Open'].shift(-1))/stock_price_data['Open'].shift(-1))\
-        *100
+        ((stock_price_data['Close'].shift(-1) - stock_price_data['Open'].shift(-1))/stock_price_data['Open'].shift(-1))*100
 
     stock_price_data = stock_price_data.dropna()
     df = stock_price_data
@@ -42,41 +42,33 @@ def data(
     df[['do', 'dh', 'dl', 'dc', 'dv', 'Close']] = scaler.fit_transform(df[['do', 'dh', 'dl', 'dc', 'dv', 'Close']])
 
 
-    x, y, date = window_x_y(df, num_class, window)
-    X, x_test, y, y_test = train_test(x, y)
-    x_train, x_valid, y_train, y_valid = train_valid(X, y)
-    test_date = df.index[-len(y_test):]
-    src = get_src(df, num_class)
+    X, y, date = window_x_y(df, num_class, window)
+    
+    percentage_test = 0.05
+    percentage_valid = 0.05
+    X, x_test, y, y_test = train_test(X, y, percentage_test)
+    x_train, x_valid, y_train, y_valid = train_valid(X, y, percentage_valid)
+    
+    src = getSrc(df, num_class, len(x_train))
+    
     print(f'x_train_len: {len(x_train)}, valid_len: {len(x_valid)}, test_len: {len(x_test)}')
 
     trainloader, validloader, testloader = (
         loader(
-            torch.tensor(x_train).to(dtype=torch.float32), 
-            torch.tensor(y_train).to(dtype=torch.float32), 
+            torch.tensor(x_train, dtype=torch.float32), 
+            torch.tensor(y_train, dtype=torch.float32), 
             batch_size=batch_size), 
         loader(
-            torch.tensor(x_valid).to(dtype=torch.float32), 
-            torch.tensor(y_valid).to(dtype=torch.float32), 
+            torch.tensor(x_valid, dtype=torch.float32), 
+            torch.tensor(y_valid, dtype=torch.float32), 
             batch_size=batch_size),
         loader(
-            torch.tensor(x_test).to(dtype=torch.float32), 
-            torch.tensor(y_test).to(dtype=torch.float32), 
+            torch.tensor(x_test, dtype=torch.float32), 
+            torch.tensor(y_test, dtype=torch.float32), 
             batch_size=batch_size)
-        )    
+    )
     
-    """
-    if num_class == 1:
-        with open('../DataLoader/dataloader_1.pk', 'wb') as f:
-            pickle.dump({'trainloader': trainloader, 'validloader': validloader, 'testloader': testloader}, f)
-    elif num_class == 2:
-        with open('../DataLoader/dataloader.pk', 'wb') as f:
-            pickle.dump({'trainloader': trainloader, 'validloader': validloader, 'testloader': testloader}, f)
-    with open('../DataLoader/dates.pk', 'wb') as f:
-        pickle.dump({'test': test_date}, f)
-    with open('../DataLoader/data_clean.pk', 'wb') as f:
-        pickle.dump(df, f)
-    with open('../DataLoader/src.pk', 'wb') as f:
-        pickle.dump(src, f)
-    """
-        
+    # test start date
+    test_date = df.index[-len(y_test):]
+    
     return trainloader, validloader, testloader, test_date, df, src
