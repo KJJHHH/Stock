@@ -57,13 +57,13 @@ class Data():
         self.data.replace([np.inf, -np.inf], np.nan, inplace=True)
         self.data.dropna(inplace=True)
     
-    def splitSize(self, percentage_test: int = 0.05, percentage_valid = 0.05):
+    def splitSize(self, percentage_test: float = 0.05, percentage_valid: float = 0.05):
         self.test_size = int(len(self.data) * percentage_test)
         self.train_size = len(self.data) - self.test_size
         self.valid_size = int(self.train_size * percentage_valid)
         self.train_size = self.train_size - self.valid_size
     
-    def normalize(self, size: str = 2500):
+    def normalize(self):
         """Normalize
 
         Args:
@@ -77,7 +77,10 @@ class Data():
         self.time = self.data.index[self.window-1:]
     
     def windowXYByDate(self): 
+        """Transform to training form of data and get the date of each sample of data
+        """
         self.getDate()
+        
         x_list, y_list = [], []
         for i in range(len(self.data)-self.window+1): 
             window = self.data.iloc[i:i+self.window]  
@@ -85,7 +88,10 @@ class Data():
             y_values = window[['doc_1']].iloc[-1].T.values
             x_list.append(x_values)
             y_list.append(y_values)
+        
+        # Check if data length match
         assert len(x_list) == len(self.time), "Mismatch time index and data"
+        
         return x_list, y_list
     
     def toTensor(self, X: list, y: list):
@@ -93,13 +99,6 @@ class Data():
     
     def trainTestSplit(self, X: torch.tensor, y: torch.tensor):
         """get train, valid, test for transfomer decoder
-
-        Args:
-            X (_type_): _description_
-            y (_type_): _description__
-
-        Returns:
-            _type_: _description_
         """
         
         def split(X: torch.tensor, y: torch.tensor, test_size: int):
@@ -124,15 +123,10 @@ class Data():
         
         return (x_train, x_valid, x_test, y_train, y_valid, y_test)
     
-    def getSrc(self, x_train: torch.tensor, size: int = None):   
-        """get source data for transformer encoder
-
-        Args:
-            x_train
-        Returns:
-            torch.tensor
+    def getSrc(self, x_train: torch.tensor, size: int = 0):   
+        """get src data for transformer encoder
         """
-        if size == None:
+        if size == 0:
             size = len(x_train)
         self.src = x_train[:size][:, :, -1].unsqueeze(0)
     
