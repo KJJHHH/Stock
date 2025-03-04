@@ -16,9 +16,6 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer, TransformerDec
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PositionalEncoding(nn.Module):
-    """
-    Why odd numer of d_model not work
-    """
     def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -43,9 +40,15 @@ class Transformer(nn.Module):
 
     def __init__(
         self, 
-        d_model: int = 6,  dropout: float = 0.5, num_class: int = 1,
-        d_hid: int = int(256/2), nhead: int = 1,  nlayers_e: int = int(64/64), 
-        nlayers_d: int = int(16/16), windows: int = 10, ntoken: int = 100):        
+        d_model: int = 6,  
+        dropout: float = 0.5, 
+        num_class: int = 1,
+        d_hid: int = int(256/2), 
+        nhead: int = 1,  
+        nlayers_e: int = int(64/64), 
+        nlayers_d: int = int(16/16), 
+        windows: int = 10, 
+        ntoken: int = 100):        
         super().__init__()
         
         self.window = windows

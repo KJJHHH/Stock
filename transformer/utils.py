@@ -63,14 +63,6 @@ def process_x(x):
     X = torch.cat(X, dim=0)
     return X
 
-def train_test(X, y, percentage_test):
-    test_size = int(percentage_test * len(X))
-    train_size = len(X) - test_size
-    x_train = X[:train_size]
-    x_test = X[train_size:]
-    y_train = y[:train_size]
-    y_test = y[train_size:]
-    return x_train, x_test, y_train, y_test, 
 
 def train_valid(X, y, percentage_valid):
     valid_size = int(percentage_valid  * len(X))
