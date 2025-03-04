@@ -12,9 +12,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Data():
     def __init__(self,
         stock: str, 
-        start_date: str = '2020-01-02',
+        start_date: str = '2016-01-02',
         end_date: str = '2024-12-31',
-        batch_size: int = 64,
+        batch_size: int = 128,
         window: int = 10
         ):
         self.stock = stock
@@ -27,6 +27,10 @@ class Data():
         self.train_size = None
         self.valid_size = None
         self.test_size = None
+        self.trainloader = None
+        self.validloader = None
+        self.testloader = None
+        self.src = None
         
         # For testing result
         self.time = None
@@ -70,17 +74,18 @@ class Data():
         self.data[['do', 'dh', 'dl', 'dc', 'dv', 'Close']] = scaler.transform(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'Close']])
 
     def getDate(self):
-        self.time = self.data.index
+        self.time = self.data.index[self.window-1:]
     
-    def windowXYByDate(self, window_size: int = 100): 
+    def windowXYByDate(self): 
         self.getDate()
         x_list, y_list = [], []
-        for i in range(len(self.data)-window_size+1): 
-            window = self.data.iloc[i:i+window_size]  
+        for i in range(len(self.data)-self.window+1): 
+            window = self.data.iloc[i:i+self.window]  
             x_values = window[['do', 'dh', 'dl', 'dc', 'dv', 'Close']].T.values  
             y_values = window[['doc_1']].iloc[-1].T.values
             x_list.append(x_values)
             y_list.append(y_values)
+        assert len(x_list) == len(self.time), "Mismatch time index and data"
         return x_list, y_list
     
     def toTensor(self, X: list, y: list):
@@ -129,7 +134,7 @@ class Data():
         """
         if size == None:
             size = len(x_train)
-        return x_train[:size]
+        self.src = x_train[:size][:, :, -1].unsqueeze(0)
     
     def getLoaders(self, datas):
         def loader(X: torch.tensor, y: torch.tensor, batch_size: int = 128):
@@ -138,27 +143,23 @@ class Data():
             return dataloader
         
         x_train, x_valid, x_test, y_train, y_valid, y_test = datas
-        trainloader = loader(x_train, y_train)
-        validloader = loader(x_valid, y_valid, 16)
-        testloader = loader(x_test, y_test,)
+        self.trainloader = loader(x_train, y_train, self.batch_size)
+        self.validloader = loader(x_valid, y_valid, len(x_valid))
+        self.testloader = loader(x_test, y_test, len(x_test))
         
-        return (trainloader, validloader, testloader)
-    
     def prepareData(self):
         self.createVarTarget()
         self.clean()
         self.splitSize()
         self.normalize()
-        X_list, y_list = self.windowXYByDate(self.window)
+        X_list, y_list = self.windowXYByDate()
         X, y = self.toTensor(X_list, y_list)
         datas = self.trainTestSplit(X, y)
-        src = self.getSrc(datas[0])
-        loaders = self.getLoaders(datas)
-        
-        return src, loaders
+        self.getSrc(datas[0])
+        self.getLoaders(datas)
     
 if __name__ == "__main__":
     data = Data(stock="2330.TW")
-    src, loaders = data.prepareData()
-    print(src.shape)
-    print(len(loaders[0]))
+    data.prepareData()
+    print(data.src.shape)
+    print(len(data.trainloader))
