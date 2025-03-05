@@ -9,11 +9,13 @@ Technical-Analysis
 transformer-old
 
 *Old Versions*
-*DataLoader*
 *.pt*
 *.vscode*
 Temp
 Model-Transformer-FP16/
 Note.md
 __pycache__
-old/
+
+Sentiment-Analysis-Stocks
+decoder-only/
+temp/
