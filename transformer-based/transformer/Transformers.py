@@ -112,8 +112,6 @@ class Transformer(nn.Module):
         
         assert train or memory is not None, "Testing but no memory" 
         
-        
-        
         # Positional encode   
         if pos_enc:
             src = self.pos_encoder(src)
@@ -127,7 +125,7 @@ class Transformer(nn.Module):
             memory = self.transformer_encoder(src, src_mask) 
         
         # For decoder input
-        Lt = tgt.size(1)
+        Lt = tgt.size(1) 
         memory_ = memory[0].repeat(tgt.size(0), 1, 1)
         
         # Decoder
@@ -136,9 +134,11 @@ class Transformer(nn.Module):
         output = tgt + output
         
         # Linear
+        """
         output = self.linear1(output[:, -1, :].reshape(output.size(0), -1))
         tgt = self.linear2(tgt[:, -1, :].reshape(output.size(0), -1))
         output = tgt + output
+        """
         
         return memory, output
     
