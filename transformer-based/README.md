@@ -12,5 +12,6 @@ Predict the daily percentile change for open and close price
 
 ## Models 
 - [x] Transformer
+- [ ] Decoder only
 
 
