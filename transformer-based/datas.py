@@ -17,6 +17,7 @@ class Data():
         batch_size: int = 128,
         window: int = 10
         ):
+        
         self.stock = stock
         self.start_date = start_date
         self.end_date = end_date
@@ -27,6 +28,11 @@ class Data():
         self.train_size = None
         self.valid_size = None
         self.test_size = None
+        
+        """Shape
+        - loaders: (batch size, seq len, features)
+        - src: (1, total seq len, features)
+        """
         self.trainloader = None
         self.validloader = None
         self.testloader = None
