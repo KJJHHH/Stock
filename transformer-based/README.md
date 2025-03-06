@@ -14,4 +14,9 @@ Predict the daily percentile change for open and close price
 - [x] Transformer
 - [ ] Decoder only
 
+## Result
+### Transformer
+- 2454
+- 2884
+
 

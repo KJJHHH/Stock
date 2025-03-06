@@ -53,10 +53,14 @@ class Data():
         self.data['dl'] = self.data['Low'].pct_change() * 100
         self.data['dc'] = self.data['Close'].pct_change() * 100
         self.data['dv'] = self.data['Volume'].pct_change() * 100
+        self.data['doc'] = ((self.data['Close'] - self.data['Open'])/self.data['Open'])*100
+        
+        """
         self.data['doc_1'] = \
             ((self.data['Close'].shift(-1) - self.data['Open'].shift(-1))/self.data['Open'].shift(-1))*100
+        """
             
-        self.data = self.data[['do', 'dh', 'dl', 'dc', 'dv', 'Close', 'doc_1']] 
+        self.data = self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']] 
         
     def clean(self):
         # Some value is inf in "dv"
@@ -76,11 +80,12 @@ class Data():
             size (int, optional): need <= train size. Defaults to 2500.
         """
         scaler = StandardScaler()
-        scaler.fit(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'Close']][:self.train_size])
-        self.data[['do', 'dh', 'dl', 'dc', 'dv', 'Close']] = scaler.transform(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'Close']])
+        scaler.fit(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']][:self.train_size])
+        self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']] = scaler.transform(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']])
 
     def getDate(self):
-        self.time = self.data.index[self.window-1:]
+        # remove first window-1 and last one since y shift 1
+        self.time = self.data.index[self.window-1:len(self.data)-1]
     
     def windowXYByDate(self): 
         """Transform to training form of data and get the date of each sample of data
@@ -88,14 +93,16 @@ class Data():
         self.getDate()
         
         x_list, y_list = [], []
-        for i in range(len(self.data)-self.window+1): 
-            window = self.data.iloc[i:i+self.window]  
-            x_values = window[['do', 'dh', 'dl', 'dc', 'dv', 'Close']].T.values  
-            y_values = window[['doc_1']].iloc[-1].T.values
+        
+        # y shift 1 from x
+        for i in range(len(self.data)-self.window): 
+            x_window = self.data.iloc[i:i+self.window]
+            y_window = self.data.iloc[i+1:i+self.window+1]  
+            x_values = x_window[['do', 'dh', 'dl', 'dc', 'dv', 'doc']].values  
+            y_values = y_window[['do', 'dh', 'dl', 'dc', 'dv', 'doc']].values
             x_list.append(x_values)
             y_list.append(y_values)
         
-        # Check if data length match
         assert len(x_list) == len(self.time), "Mismatch time index and data"
         
         return x_list, y_list
@@ -134,7 +141,7 @@ class Data():
         """
         if size == 0:
             size = len(x_train)
-        self.src = x_train[:size][:, :, -1].unsqueeze(0)
+        self.src = x_train[:size][:, -1, :].unsqueeze(0)
     
     def getLoaders(self, datas):
         def loader(X: torch.tensor, y: torch.tensor, batch_size: int = 128):
