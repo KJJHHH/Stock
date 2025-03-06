@@ -16,7 +16,9 @@ Predict the daily percentile change for open and close price
 
 ## Result
 ### Transformer
-- 2454
-- 2884
+- ![2454 performance](result/2454.TW.png)
+- ![2884 performance](result/2884.TW.png)
+### Decoder only
+...
 
 
