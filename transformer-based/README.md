@@ -2,7 +2,10 @@
 Predict the daily percentile change for open and close price
 
 ## Usage
-`python train.py`
+```
+cd Stock/transformer-based
+python train.py
+```
 - Enter stock id, eg. 2884.TW
 - Select model
 
