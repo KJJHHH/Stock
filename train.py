@@ -19,12 +19,22 @@ if __name__ == "__main__":
     Init model in Predictor.py and Backtest.py (different arguement)
     """
     
-    if MODEL == "Transformer":
-        model = Transformer
-        model_dir = "transformer_based/"
-        
+    if MODEL == "Transformer":        
         data = TransformerData(stock)
         data.prepareData()
+        
+        model_dir = "transformer_based/"
+        model = Transformer(
+            d_model=6, 
+            dropout=0.5, 
+            d_hid=128, 
+            nhead=2, 
+            nlayers_e=64, 
+            nlayers_d=16, 
+            ntoken=10, 
+            src_len=data.src.shape[1],
+            train=True
+        ).to(device)
         
     if MODEL == "Decoder-Only":
         model = None

@@ -40,7 +40,7 @@ class Seq2SeqPredictor:
         self.device = self.accelerator.device
         
         # Model, loss, optimizer, scheduler
-        self.model = model().to(self.device)
+        self.model = model
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=0.00001)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=len(self.data.trainloader) * 1, gamma=0.9)
