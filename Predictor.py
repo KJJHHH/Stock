@@ -19,13 +19,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """"
 Future update:
-- Use differnet src data to train transformer
 - Add different model to fit this predictor
+- Use differnet src data to train transformer
 - Train from stored model
 """
 
 class Seq2SeqPredictor:
-    def __init__(self, stock, model, model_dir="./", num_epochs=200, lr=0.001):
+    def __init__(self, stock, model, data, model_dir="./", num_epochs=200, lr=0.001):
         
         self.stock = stock
         self.num_epochs = num_epochs
@@ -33,8 +33,7 @@ class Seq2SeqPredictor:
         self.model_dir = model_dir
         
         # Data Preparation
-        self.data = TransformerData(stock)
-        self.data.prepareData()
+        self.data = data
         
         # Accelerator setup
         self.accelerator = Accelerator(mixed_precision='fp16')

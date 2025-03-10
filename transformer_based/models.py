@@ -55,11 +55,11 @@ class Transformer(nn.Module):
         nlayers_e: int = 64, 
         nlayers_d: int = 16, 
         ntoken: int = 10,
-        test = False):        
+        train = True):        
         super().__init__()
         
         # When testing
-        if test:
+        if not train:
             global device
             device = torch.device("cpu")
         
