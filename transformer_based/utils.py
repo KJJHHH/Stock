@@ -2,7 +2,6 @@ from tqdm import tqdm
 import numpy as np
 import yfinance as yf
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

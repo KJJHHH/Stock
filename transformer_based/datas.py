@@ -3,13 +3,16 @@ import pandas as pd
 import pickle
 import torch
 from sklearn.preprocessing import StandardScaler
-from utils import *
+import yfinance as yf
+
+from torch.utils.data import DataLoader, TensorDataset
+
 import warnings
 warnings.filterwarnings("ignore")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class Data():
+class TransformerData():
     def __init__(self,
         stock: str, 
         start_date: str = '2016-01-02',
@@ -126,12 +129,12 @@ class Data():
         x_train, x_test, y_train, y_test = split(X, y, self.test_size)
         x_train, x_valid, y_train, y_valid = split(x_train, y_train, self.valid_size)
         
-        print(f"""Shape:
-            x_train: {x_train.shape}, 
-            x_valid: {x_valid.shape},
-            x_test: {x_test.shape},
-            y_train: {y_train.shape},
-            y_valid: {y_valid.shape},
+        print(f"""Data Shape: \
+            x_train: {x_train.shape}, \
+            x_valid: {x_valid.shape}, \
+            x_test: {x_test.shape}, \
+            y_train: {y_train.shape}, \
+            y_valid: {y_valid.shape}, \
             y_test: {y_test.shape}""")
         
         return (x_train, x_valid, x_test, y_train, y_valid, y_test)
@@ -166,7 +169,7 @@ class Data():
         self.getLoaders(datas)
     
 if __name__ == "__main__":
-    data = Data(stock="2330.TW")
+    data = TransformerData(stock="2330.TW")
     data.prepareData()
     print(data.src.shape)
     print(len(data.trainloader))
