@@ -10,9 +10,8 @@ from sklearn.preprocessing import StandardScaler
 from transformer_based.utils import *
 from transformer_based.datas import TransformerData
 from transformer_based.models import Transformer
-from Trainer import Seq2SeqPredictor
 
-device = torch.device('cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Backtestor():
     def __init__(self, stock, model, data, model_dir="./"):
@@ -26,21 +25,8 @@ class Backtestor():
     def loadModel(self, epoch):
         if epoch == "best":
             self.model.load_state_dict(torch.load(f'{self.model_dir}{self.model.__name__}-result/{self.stock}_best.pt'))
-            self.model.to(device)
         else:
             self.model.load_state_dict(torch.load(f'{self.model_dir}{self.model.__name__}-temp/{self.stock}_epoch_{epoch}.pt'))
-            self.model.to(device)
-    
-    
-    def testing(self, loader):
-        with torch.no_grad():
-            # testloader number of batch = 1
-            self.model.eval()
-            for x_test, y_test in loader:
-                _, result = self.model(src=self.data.src, tgt=x_test, test=True) # train, test set train = True, valid set False
-                result = result[:, -1, -1].cpu().numpy()
-                truth = y_test[:, -1, -1].cpu().numpy()
-        return result, truth
     
     def getLoader(self, dataset = "test"):
         if dataset == "test":
@@ -52,61 +38,73 @@ class Backtestor():
 
         return loader
     
-    def predict(self, dataset = "test", epoch="best"):
-        print(f"Predicting epoch {epoch}...")
+    def testBuyHold(self, loader):
         
-        loader = self.getLoader(dataset)
-        self.loadModel(epoch)        
-        result, truth = self.testing(loader)
+        for _, y_test in loader:
+            truth = y_test[:, -1, -1]
         
-        return result, truth
-
-    def backtestModel(self, result, truth, thres: int = 0, short: bool = False):
         asset = 1
         asset_hist = []
-        for doc_1, pred in zip(truth, result):
-            if pred > thres:
-                asset *= (1 + doc_1/100)
-            if short and pred < thres:
-                asset *= (1 - doc_1/100)
+
+        for doc_1 in truth:
+            asset *= (1 + doc_1.item())
             asset_hist.append(asset)
             
         return asset_hist
-
-    def backtestBuyHold(self, truth):
-        asset_buyhold = 1
-        asset_buyhold_hist = []
-
-        for doc_1 in truth:
-            asset_buyhold *= (1 + doc_1/100)
-            asset_buyhold_hist.append(asset_buyhold)
-
-        return asset_buyhold_hist
     
     def getTimeTest(self, len_test):
         return self.data.data.index[-len_test:]
 
-    def main(self, epochs: list = [], short: bool = True):
+    @staticmethod
+    def testModel(model, loader, src, short):
         
+        def cumProduct(result, truth, short):
+            truth[result >= 0] = 1 + truth[result >= 0]
+            if short:
+                truth[result < 0] = 1 - truth[result < 0]
+            else:
+                truth[result < 0] = 1
+            return torch.cumprod(truth, dim=0)
+        
+        with torch.no_grad():
+            # testloader number of batch = 1
+            model.eval()
+            for x_test, y_test in loader:
+                x_test, y_test, src = x_test.to(device), y_test.to(device), src.to(device)
+                _, result = model(src=src, tgt=x_test)
+                result = result[:, -1, -1]
+                truth = y_test[:, -1, -1]
+                
+        asset_hist = cumProduct(result, truth, short)
+        asset_hist = asset_hist.cpu().numpy()
+        return asset_hist[-1], asset_hist
+
+    def main(self, epochs: list = [], short: bool = True):
+        """
+        Backtest with test set
+        """
         epochs.append("best")
         epochs.append("buyhold")
         
         plt.figure(figsize=(10, 6)) 
+        
+        loader = self.getLoader("test")
+        test_len = self.data.test_len
+        time = self.getTimeTest(test_len)
         
         for epoch in epochs:
             
             assert epoch is not int or epoch % 10 == 0, "Epoch must be multiple of 10"
             
             if epoch == "buyhold":
-                asset_hist = self.backtestBuyHold(truth)
-                time = self.getTimeTest(result.shape[0])
+                asset_hist = self.testBuyHold(loader)
                 df = pd.DataFrame({"BuyHold": asset_hist}).set_index(time)
                 plt.plot(df["BuyHold"], linestyle="dashed", label=f"BuyHold")  # Buy & Hold strategy
                 continue
                 
-            result, truth = self.predict(dataset="test", epoch=epoch)
-            asset_hist = self.backtestModel(result, truth, 0, short)
-            time = self.getTimeTest(result.shape[0])
+            print(f"Predicting epoch {epoch}...")
+            self.loadModel(epoch)        
+            asset, asset_hist = self.testModel(self.model, loader, self.data.src, short)
             df = pd.DataFrame({"Model": asset_hist,}).set_index(time)
             plt.plot(df["Model"], label=f"Model Epoch {epoch}")   # Model performance
         

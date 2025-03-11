@@ -96,7 +96,6 @@ class Transformer(nn.Module):
         tgt: torch.tensor, 
         src: torch.tensor = None, 
         memory: torch.tensor = None,
-        test: bool = False,
         ) -> torch.tensor:
         
         """
@@ -104,10 +103,6 @@ class Transformer(nn.Module):
         src: (batch, seq, feature) = (1, seq_src, d_model), a long seq
         tgt: (batch, seq, feature) = (batch, seq_tgt = window, d_model)
         """     
-        
-        if test:
-            global device
-            device = tgt.device
         
         # Encoder
         """

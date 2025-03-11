@@ -31,8 +31,6 @@ if __name__ == "__main__":
     
     # Parse arguments
     args = parser.parse_args()
-    print(args)
-    print(args.task, args.model, args.stock)
 
     task = args.task
     stock = args.stock
@@ -81,6 +79,7 @@ if __name__ == "__main__":
     if task == "train":
         predictor = Seq2SeqPredictor(stock, model=model, data=data, model_dir=model_dir, num_epochs=200, lr=0.001)
         predictor.train()
+        
     if task == "test":
         predictor = Backtestor(stock, model=model, data=data, model_dir=model_dir)
         predictor.main(epochs=[0, 20, 40, 60], short=True)

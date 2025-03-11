@@ -36,9 +36,9 @@ class TransformerData():
         - loaders: (batch size, seq len, features)
         - src: (1, total seq len, features)
         """
-        self.train_size = None
-        self.valid_size = None
-        self.test_size = None
+        self.train_len = None
+        self.valid_len = None
+        self.test_len = None
         self.trainloader = None
         self.validloader = None
         self.testloader = None
@@ -62,7 +62,7 @@ class TransformerData():
         self.data['dl'] = self.data['Low'].pct_change() * 100
         self.data['dc'] = self.data['Close'].pct_change() * 100
         self.data['dv'] = self.data['Volume'].pct_change() * 100
-        self.data['doc'] = ((self.data['Close'] - self.data['Open'])/self.data['Open'])*100
+        self.data['doc'] = ((self.data['Close'] - self.data['Open'])/self.data['Open'])
         
         """
         self.data['doc_1'] = \
@@ -83,8 +83,8 @@ class TransformerData():
             size (int, optional): need <= train size. Defaults to 2500.
         """
         scaler = StandardScaler()
-        scaler.fit(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']][:self.train_size])
-        self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']] = scaler.transform(self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']])
+        scaler.fit(self.data[['do', 'dh', 'dl', 'dc', 'dv']][:self.train_len])
+        self.data[['do', 'dh', 'dl', 'dc', 'dv']] = scaler.transform(self.data[['do', 'dh', 'dl', 'dc', 'dv']])
 
     def getDate(self):
         # remove first window-1 and last one since y shift 1
@@ -114,10 +114,10 @@ class TransformerData():
         return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
     
     def splitSize(self, percentage_test: float = 0.2, percentage_valid: float = 0.2):
-        self.test_size = int(len(self.data) * percentage_test)
-        self.train_size = len(self.data) - self.test_size
-        self.valid_size = int(self.train_size * percentage_valid)
-        self.train_size = self.train_size - self.valid_size
+        self.test_len = int(len(self.data) * percentage_test)
+        self.train_len = len(self.data) - self.test_len
+        self.valid_len = int(self.train_len * percentage_valid)
+        self.train_len = self.train_len - self.valid_len
     
     def trainTestSplit(self, X: torch.tensor, y: torch.tensor):
         """get train, valid, test for transfomer decoder
@@ -132,8 +132,8 @@ class TransformerData():
             
             return x_train, x_test, y_train, y_test, 
     
-        x_train, x_test, y_train, y_test = split(X, y, self.test_size)
-        x_train, x_valid, y_train, y_valid = split(x_train, y_train, self.valid_size)
+        x_train, x_test, y_train, y_test = split(X, y, self.test_len)
+        x_train, x_valid, y_train, y_valid = split(x_train, y_train, self.valid_len)
         
         print(f"""Data Shape: \
             x_train: {x_train.shape}, \

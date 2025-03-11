@@ -32,7 +32,7 @@ class Seq2SeqPredictor:
         self.lr = lr
         self.model_dir = model_dir
         
-        # Data Preparation
+        # Data 
         self.data = data
         
         # Accelerator setup
