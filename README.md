@@ -5,12 +5,13 @@ Predict the daily percentile change for open and close price
 ### Train
 ```
 cd Stock
-python train.py
+python task.py train --model Transformer --stock 2884.TW
 ```
-- Enter stock id, eg. 2884.TW
-- Select model
 ### Backtest
-... haven't finish
+```
+cd Stock
+python task.py test --model Transformer --stock 2884.TW  
+```
 
 ## Result
 ### Transformer

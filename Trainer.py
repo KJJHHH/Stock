@@ -25,7 +25,7 @@ Future update:
 """
 
 class Seq2SeqPredictor:
-    def __init__(self, stock, model, data, model_dir="./", num_epochs=200, lr=0.001):
+    def __init__(self, stock, model, data, model_dir="./", num_epochs=200, lr=0.01):
         
         self.stock = stock
         self.num_epochs = num_epochs
@@ -43,7 +43,7 @@ class Seq2SeqPredictor:
         self.model = model
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=0.00001)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=len(self.data.trainloader) * 1, gamma=0.9)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma=0.5)
         self.memory = None
         
         # Prepare with accelerator
@@ -83,7 +83,7 @@ class Seq2SeqPredictor:
             loss_train_mean = self.transformer_train()
             
             # Scheduler 
-            if epoch > 50:
+            if epoch > 100:
                 self.scheduler.step()
                 
             # Store ckpt
@@ -96,10 +96,10 @@ class Seq2SeqPredictor:
                 min_val_loss = loss_valid_mean
                 not_improve_cnt = 0
                 print(f'New best model found in epoch {epoch} with val loss: {min_val_loss}')
-                torch.save(self.model.state_dict(), self.model_dir+f'{self.model.__name__}-result/{self.stock}__best.pt')
+                torch.save(self.model.state_dict(), self.model_dir+f'{self.model.__name__}-result/{self.stock}_best.pt')
             else:
                 not_improve_cnt += 1
-                if not_improve_cnt >= 50:
+                if not_improve_cnt >= 100:
                     print(f'Early stopping at epoch {epoch}')
                     break
                     
@@ -112,7 +112,7 @@ class Seq2SeqPredictor:
         for x, y in tqdm(self.data.trainloader): 
             
             self.optimizer.zero_grad()       
-            self.memory, outputs = self.model(src=self.data.src, tgt=x, train=True)    
+            self.memory, outputs = self.model(src=self.data.src, tgt=x)    
             loss = self.criterion(outputs, y)
             self.accelerator.backward(loss)
             self.optimizer.step()
@@ -125,7 +125,7 @@ class Seq2SeqPredictor:
         with torch.no_grad():
             self.model.eval()
             for x_val, y_val in self.data.validloader:
-                _, outputs_val = self.model(tgt=x_val, train=False, memory=self.memory)
+                _, outputs_val = self.model(memory=self.memory, tgt=x_val)
                 loss = self.criterion(outputs_val, y_val)
                 loss_valid_mean += loss.item()
         

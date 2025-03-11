@@ -26,7 +26,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        return x + self.pe[:, :x.size(1), :].to(device)
+        return x + self.pe[:, :x.size(1), :]
 
 class Transformer(nn.Module):
     """From language model to time sequence
@@ -48,13 +48,9 @@ class Transformer(nn.Module):
         nlayers_d: int = 16, 
         ntoken: int = 10, # Window
         src_len: int = 1960, # Src seq len
-        train = True):        
+        ):        
         super().__init__()
         
-        # When testing
-        if not train:
-            global device
-            device = torch.device("cpu")
         
         # Len of windows
         self.d_model = d_model
@@ -98,10 +94,10 @@ class Transformer(nn.Module):
     def forward(
         self, 
         tgt: torch.tensor, 
-        train: bool,
         src: torch.tensor = None, 
         memory: torch.tensor = None,
-        pos_enc: bool = True) -> torch.tensor:
+        test: bool = False,
+        ) -> torch.tensor:
         
         """
         Input:
@@ -109,14 +105,18 @@ class Transformer(nn.Module):
         tgt: (batch, seq, feature) = (batch, seq_tgt = window, d_model)
         """     
         
-        assert train or memory is not None, "Testing but no memory" 
-        
-            
+        if test:
+            global device
+            device = tgt.device
         
         # Encoder
-        if train: 
+        """
+        NOTE:
+        When validating, memory are passed by train memory
+        """
+        if memory is None: 
             # Positional encode
-            src = self.pos_enc(src)
+            # src = self.pos_enc(src)
             # Encoder
             Ls = src.size(1) 
             src_mask = nn.Transformer.generate_square_subsequent_mask(Ls).to(device)
@@ -127,7 +127,7 @@ class Transformer(nn.Module):
         memory_ = memory[0].repeat(tgt.size(0), 1, 1)
         
         # Positional encode
-        tgt = self.pos_dec(tgt)
+        # tgt = self.pos_dec(tgt)
         # Decoder
         tgt_mask = nn.Transformer.generate_square_subsequent_mask(Lt).to(device)
         output = self.transformer_decoder(tgt=tgt, tgt_mask=tgt_mask, memory=memory_) 
