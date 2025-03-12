@@ -6,6 +6,7 @@ import math
 import torch
 from torch import nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer, TransformerDecoder, TransformerDecoderLayer
+import torch.nn.functional as F
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -57,10 +58,15 @@ class Transformer(nn.Module):
         self.ntoken = ntoken
         self.model_type = f'Transformer-Window{ntoken}-EL{nlayers_e}-DL{nlayers_d}-Hid{d_hid}-NHead{nhead}'
         self.dropout = dropout
+        self.src_len = src_len
         
         # Positional encoding
         self.pos_enc = PositionalEncoding(d_model, src_len)
         self.pos_dec = PositionalEncoding(d_model, ntoken)
+        
+        # Mask
+        self.src_mask = nn.Transformer.generate_square_subsequent_mask(self.src_len)
+        self.tgt_mask = nn.Transformer.generate_square_subsequent_mask(self.ntoken)
 
         # Transformer
         """
@@ -109,31 +115,27 @@ class Transformer(nn.Module):
         NOTE:
         When validating, memory are passed by train memory
         """
+        if src.size(1) != self.src_len:
+            self.src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(device)
+            src = F.pad(src, (0, 0, 0, self.src_len - src.size(1)))
+            self.src_mask = ...
+            raise ValueError(f"src_len must be {self.src_len}, but got {src.size(1)}")
         if memory is None: 
             # Positional encode
             # src = self.pos_enc(src)
             # Encoder
-            Ls = src.size(1) 
-            src_mask = nn.Transformer.generate_square_subsequent_mask(Ls).to(device)
-            memory = self.transformer_encoder(src, src_mask) 
+            memory = self.transformer_encoder(src, self.src_mask) 
             
         # For decoder input
-        Lt = tgt.size(1) 
         memory_ = memory[0].repeat(tgt.size(0), 1, 1)
         
         # Positional encode
         # tgt = self.pos_dec(tgt)
         # Decoder
-        tgt_mask = nn.Transformer.generate_square_subsequent_mask(Lt).to(device)
-        output = self.transformer_decoder(tgt=tgt, tgt_mask=tgt_mask, memory=memory_) 
-        output = tgt + output
+        output = self.transformer_decoder(tgt=tgt, tgt_mask=self.tgt_mask, memory=memory_) 
         
         # Linear
-        """
-        output = self.linear1(output[:, -1, :].reshape(output.size(0), -1))
-        tgt = self.linear2(tgt[:, -1, :].reshape(output.size(0), -1))
-        output = tgt + output
-        """
+        ...
         
         return memory, output
     

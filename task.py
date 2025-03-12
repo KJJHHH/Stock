@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A simple argument parser example")
     parser.add_argument("task", help="train or test")  # Positional argument
     parser.add_argument("-m", "--model", help="Select model: [Transformer, Decoder only]")  # Positional argument
-    parser.add_argument("-s", "--stock", help="Enter stock id, eg. 2884.TW")  # Positional argument
+    parser.add_argument("-s", "--stock", nargs='+', help="Enter stock id, eg. 2884.TW")  # Positional argument
     
     # Parse arguments
     args = parser.parse_args()
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     task = args.task
     stock = args.stock
     MODEL = args.model
+    
     
     
     """
@@ -45,19 +46,10 @@ if __name__ == "__main__":
     |cv_based
     |----|...
     """
-    if MODEL == "Transformer":        
-        data = TransformerData(
-            stock=stock, 
-            start_date='2017-01-01',
-            end_date='2025-01-01',
-            window=5, 
-            batch_size=128, 
-            percentage_test=0.05, 
-            percentage_valid=0.1, 
-            src_len=0
-            )
+    if MODEL == "Transformer":   
         
-        model_dir = "transformer_based/"
+        ckpt_dir = "transformer_based/transformer-temp/"
+        performance_dir = "transformer_based/transformer-result/"
         model = Transformer(
             d_model=6, 
             dropout=0.5, 
@@ -69,17 +61,47 @@ if __name__ == "__main__":
             src_len=data.src.shape[1],
         ).to(device)
         
-    if MODEL == "Decoder-Only":
-        model = None
-        model_dir = "transformer_based/"
+        config = {
+            "name": MODEL,
+
+            "arch": {
+                "type": MODEL,
+                "args": {}
+            },
+            "optimizer": {
+                "type": "Adam",
+                "args":{
+                    "lr": 0.001,
+                    "weight_decay": 0.00001,
+                    "amsgrad": True
+                }
+            },
+            "lr_scheduler": {
+                "type": "StepLR",
+                "args": {
+                    "step_size": 1,
+                    "gamma": 0.5
+                }
+            },
+            "start_date": "2017-01-01",
+            "end_date": "2025-01-01",
+            "epochs": 200,
+            "val_type": "loss"
+
+        }
         
-        data = TransformerData(stock)
-        data.prepareData()
+    if MODEL == "Decoder-Only":
+        pass
     
     if task == "train":
-        predictor = Seq2SeqPredictor(stock, model=model, data=data, model_dir=model_dir, num_epochs=200, lr=0.001)
+        predictor = Seq2SeqPredictor(
+            stock=stock, 
+            model=model, 
+            config=config,  
+            dirs=[ckpt_dir, performance_dir]
+        )
         predictor.train()
         
     if task == "test":
-        predictor = Backtestor(stock, model=model, data=data, model_dir=model_dir)
-        predictor.main(epochs=[0, 20, 40, 60], short=True)
+        testor = Backtestor(stock, model=model, data=data, model_dir=model_dir)
+        testor.test(ckpts=[0, 20, 40, 60, 190], short=True)

@@ -45,31 +45,32 @@ class TransformerData():
         self.src = None
         
         # For testing result
-        self.time = None
+        self.dates = None
         self.data_origin = self.data.copy()
         
         # Prepare data
         self.prepareData(batch_size, percentage_test, percentage_valid, src_len)
     
     def fetchPrice(self):
-        data = yf.Ticker(self.stock)
-        data = data.history(start=self.start_date, end=self.end_date)
-        return data
+        
+        data = yf.download(self.stock, start=self.start_date, end=self.end_date, interval="1d", group_by='ticker', auto_adjust=False, prepost=False, threads=True, proxy=None)
+        
+        return data[self.stock]
     
     def createVarTarget(self):
+        """Variables to predict "doc"
+        """
         self.data['do'] = self.data['Open'].pct_change() * 100
         self.data['dh'] = self.data['High'].pct_change() * 100
         self.data['dl'] = self.data['Low'].pct_change() * 100
         self.data['dc'] = self.data['Close'].pct_change() * 100
+        self.data['dac'] = self.data['Adj Close'].pct_change() * 100
         self.data['dv'] = self.data['Volume'].pct_change() * 100
         self.data['doc'] = ((self.data['Close'] - self.data['Open'])/self.data['Open'])
         
-        """
-        self.data['doc_1'] = \
-            ((self.data['Close'].shift(-1) - self.data['Open'].shift(-1))/self.data['Open'].shift(-1))*100
-        """
+        columns = ['do', 'dh', 'dl', 'dc', 'dv', 'dac', 'doc']
             
-        self.data = self.data[['do', 'dh', 'dl', 'dc', 'dv', 'doc']] 
+        self.data = self.data[columns] 
         
     def clean(self):
         # Some value is inf in "dv"
@@ -83,12 +84,17 @@ class TransformerData():
             size (int, optional): need <= train size. Defaults to 2500.
         """
         scaler = StandardScaler()
-        scaler.fit(self.data[['do', 'dh', 'dl', 'dc', 'dv']][:self.train_len])
-        self.data[['do', 'dh', 'dl', 'dc', 'dv']] = scaler.transform(self.data[['do', 'dh', 'dl', 'dc', 'dv']])
+        columns = ['do', 'dh', 'dl', 'dc', 'dv', 'dac']
+        scaler.fit(self.data[columns][:self.train_len])
+        self.data[columns] = scaler.transform(self.data[columns])
 
     def getDate(self):
+        """
+        Get the date for start of train to test end
+        """
+        
         # remove first window-1 and last one since y shift 1
-        self.time = self.data.index[self.window-1:len(self.data)-1]
+        self.dates = self.data.index[self.window-1:len(self.data)-1]
     
     def windowXYByDate(self): 
         """Transform to training form of data and get the date of each sample of data
@@ -106,7 +112,7 @@ class TransformerData():
             x_list.append(x_values)
             y_list.append(y_values)
         
-        assert len(x_list) == len(self.time), "Mismatch time index and data"
+        assert len(x_list) == len(self.dates), "Mismatch time index and data"
         
         return x_list, y_list
     

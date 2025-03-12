@@ -15,10 +15,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Backtestor():
     def __init__(self, stock, model, data, model_dir="./"):
-        self.stock = stock
+        self.stock = stock[0]
+        self.data = data
         self.model = model
         self.model_dir = model_dir
-        self.data = data
+        
+        self.test_loader = self.getTestLoader("test")
+        self.test_len = self.getTestLen()
+        self.test_dates = self.getTestTime()
         
         print("Backtesting " + self.model.__name__ + " on " + self.stock)
         
@@ -28,7 +32,7 @@ class Backtestor():
         else:
             self.model.load_state_dict(torch.load(f'{self.model_dir}{self.model.__name__}-temp/{self.stock}_epoch_{epoch}.pt'))
     
-    def getLoader(self, dataset = "test"):
+    def getTestLoader(self, dataset = "test"):
         if dataset == "test":
             loader = self.data.testloader
         if dataset == "valid":
@@ -38,25 +42,25 @@ class Backtestor():
 
         return loader
     
-    def testBuyHold(self, loader):
-        
-        for _, y_test in loader:
-            truth = y_test[:, -1, -1]
-        
-        asset = 1
-        asset_hist = []
-
-        for doc_1 in truth:
-            asset *= (1 + doc_1.item())
-            asset_hist.append(asset)
-            
-        return asset_hist
+    def getTestLen(self):
+        test_len = 0
+        for x, y in self.test_loader:
+            test_len += x.shape[0]
+        return test_len
     
-    def getTimeTest(self, len_test):
-        return self.data.data.index[-len_test:]
+    def getTestTime(self):
+        return self.data.data.index[-self.test_len:]
 
+    def testBuyHold(self):
+        
+        test_data = self.data.data_origin.loc[self.test_dates]["Adj Close"]
+        test_data /= test_data.iloc[0]
+            
+        return test_data
+    
+    
     @staticmethod
-    def testModel(model, loader, src, short):
+    def testModel(model, loader, src, short, verbose=False):
         
         def cumProduct(result, truth, short):
             truth[result >= 0] = 1 + truth[result >= 0]
@@ -77,35 +81,34 @@ class Backtestor():
                 
         asset_hist = cumProduct(result, truth, short)
         asset_hist = asset_hist.cpu().numpy()
+        
+        if verbose:
+            print(result)
+            
         return asset_hist[-1], asset_hist
-
-    def main(self, epochs: list = [], short: bool = True):
+    
+    def test(self, ckpts: list = [], short: bool = True):
         """
         Backtest with test set
         """
-        epochs.append("best")
-        epochs.append("buyhold")
+        
+        ckpts.append("best")
+        ckpts.append("buyhold")
         
         plt.figure(figsize=(10, 6)) 
         
-        loader = self.getLoader("test")
-        test_len = self.data.test_len
-        time = self.getTimeTest(test_len)
-        
-        for epoch in epochs:
+        for epoch in ckpts:
             
             assert epoch is not int or epoch % 10 == 0, "Epoch must be multiple of 10"
             
             if epoch == "buyhold":
-                asset_hist = self.testBuyHold(loader)
-                df = pd.DataFrame({"BuyHold": asset_hist}).set_index(time)
-                plt.plot(df["BuyHold"], linestyle="dashed", label=f"BuyHold")  # Buy & Hold strategy
+                plt.plot(self.testBuyHold(), linestyle="dashed", label=f"BuyHold")  # Buy & Hold strategy
                 continue
                 
             print(f"Predicting epoch {epoch}...")
             self.loadModel(epoch)        
-            asset, asset_hist = self.testModel(self.model, loader, self.data.src, short)
-            df = pd.DataFrame({"Model": asset_hist,}).set_index(time)
+            asset, asset_hist = self.testModel(self.model, self.test_loader, self.data.src, short, verbose=True)
+            df = pd.DataFrame({"Model": asset_hist,}).set_index(self.test_dates)
             plt.plot(df["Model"], label=f"Model Epoch {epoch}")   # Model performance
         
         

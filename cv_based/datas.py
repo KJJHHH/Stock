@@ -16,6 +16,7 @@ def data(
     window: int = 10
     ):
     stock_price_data = fetch_stock_price(stock_symbol=stock, start_date='2012-01-02',end_date=end_date)
+    print(stock_price_data)
 
     # pctchange: (today - yesterday)/yesterday
     stock_price_data['do'] = stock_price_data['Open'].pct_change() * 100

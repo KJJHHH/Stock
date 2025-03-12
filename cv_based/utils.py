@@ -24,10 +24,10 @@ def normalize(x, mean, std):
     return (x - mean) / std
 
 def fetch_stock_price(stock_symbol, start_date, end_date):
-    stock = yf.Ticker(stock_symbol)
-    stock_data = stock.history(start=start_date, end=end_date)
-
-    return stock_data
+    
+    data = yf.download(stock_symbol, start=start_date, end= end_date, interval="1d", group_by='ticker', auto_adjust=False, prepost=False, threads=True, proxy=None)
+    
+    return data[stock_symbol]
 
 
 def window_x_y(df, num_class, window_size=100): # df: before split
