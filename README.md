@@ -12,20 +12,6 @@ python task.py train --model Transformer --stock 2330.TW
 cd Stock
 python task.py test --model Transformer --stock 2330.TW  
 ```
-## Directories
-|base_trainer
-|  |trainer
-|transformer_based
-|  |models.py
-|  |datas.py
-|  |trainer.py
-|  |backtestor.py
-|  |utils.py
-|cv_based
-|  |...
-|  
-
-
 
 
 ## Result
@@ -39,4 +25,26 @@ python task.py test --model Transformer --stock 2330.TW
 
 ### Resnet
 ...
+
+## Directories
+project_root/
+│── base_trainer/        # 🏋️ Base trainer module
+│   ├── trainer/         # 🎯 Training logic for models
+│
+│── transformer_based/   # 🤖 Transformer-based models
+│   ├── models.py        # 🏗️ Model definitions
+│   ├── datas.py         # 📊 Data processing scripts
+│   ├── trainer.py       # 🏋️ Training pipeline
+│   ├── backtestor.py    # 📈 Backtesting implementation
+│   ├── utils.py         # 🔧 Helper functions
+│
+│── cv_based/            # 🎥 Computer Vision-based models
+│   ├── ...             # 📂 (Files for CV models go here)
+│
+│── README.md            # 📘 Project documentation
+│── task.py              # 🚀 Main task execution script
+
+
+
+
 
