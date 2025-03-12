@@ -27,6 +27,7 @@ python task.py test --model Transformer --stock 2330.TW
 ...
 
 ## Directories
+```
 project_root/
 │── base_trainer/        # 🏋️ Base trainer module
 │   ├── trainer/         # 🎯 Training logic for models
@@ -43,7 +44,7 @@ project_root/
 │
 │── README.md            # 📘 Project documentation
 │── task.py              # 🚀 Main task execution script
-
+```
 
 
 
