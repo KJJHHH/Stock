@@ -12,6 +12,21 @@ python task.py train --model Transformer --stock 2330.TW
 cd Stock
 python task.py test --model Transformer --stock 2330.TW  
 ```
+## Directories
+|base_trainer
+|  |trainer
+|transformer_based
+|  |models.py
+|  |datas.py
+|  |trainer.py
+|  |backtestor.py
+|  |utils.py
+|cv_based
+|  |...
+|  
+
+
+
 
 ## Result
 ### Transformer
