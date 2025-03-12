@@ -22,7 +22,7 @@ class TransformerData():
         batch_size: int = 64, 
         percentage_test: float = 0.05, 
         percentage_valid: float = 0.05, 
-        src_len: int = 0
+        src_len = None
         ):
         
         self.stock = stock
@@ -30,7 +30,6 @@ class TransformerData():
         self.end_date = end_date
         self.window = window      
         
-        self.data = self.fetchPrice()
         
         """Shape
         - loaders: (batch size, seq len, features)
@@ -43,19 +42,28 @@ class TransformerData():
         self.validloader = None
         self.testloader = None
         self.src = None
+        self.src_len = src_len
         
         # For testing result
         self.dates = None
-        self.data_origin = self.data.copy()
         
         # Prepare data
-        self.prepareData(batch_size, percentage_test, percentage_valid, src_len)
+        self.data = self.fetchPrice()
+        self.data_origin = self.data.copy()
+        self.createVarTarget()
+        self.clean()
+        self.normalize()
+        X_list, y_list = self.windowXYByDate()
+        X, y = self.toTensor(X_list, y_list)
+        datas = self.trainTestSplit(X, y, percentage_test, percentage_valid)
+        self.getSrc(datas[0], src_len)
+        self.getLoaders(datas, batch_size)
     
     def fetchPrice(self):
         
         data = yf.download(self.stock, start=self.start_date, end=self.end_date, interval="1d", group_by='ticker', auto_adjust=False, prepost=False, threads=True, proxy=None)
-        
-        return data[self.stock]
+        data.columns = data.columns.droplevel(0)
+        return data
     
     def createVarTarget(self):
         """Variables to predict "doc"
@@ -119,13 +127,7 @@ class TransformerData():
     def toTensor(self, X: list, y: list):
         return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
     
-    def splitSize(self, percentage_test: float = 0.2, percentage_valid: float = 0.2):
-        self.test_len = int(len(self.data) * percentage_test)
-        self.train_len = len(self.data) - self.test_len
-        self.valid_len = int(self.train_len * percentage_valid)
-        self.train_len = self.train_len - self.valid_len
-    
-    def trainTestSplit(self, X: torch.tensor, y: torch.tensor):
+    def trainTestSplit(self, X: torch.tensor, y: torch.tensor, percentage_test: float = 0.2, percentage_valid: float = 0.2):
         """get train, valid, test for transfomer decoder
         """
         
@@ -137,10 +139,18 @@ class TransformerData():
             y_test = y[train_size:]
             
             return x_train, x_test, y_train, y_test, 
-    
+        
+        # data sizes
+        self.test_len = int(len(self.data) * percentage_test)
+        self.train_len = len(self.data) - self.test_len
+        self.valid_len = int(self.train_len * percentage_valid)
+        self.train_len = self.train_len - self.valid_len
+
+        # data split
         x_train, x_test, y_train, y_test = split(X, y, self.test_len)
         x_train, x_valid, y_train, y_valid = split(x_train, y_train, self.valid_len)
         
+        # print data shape
         print(f"""Data Shape: \
             x_train: {x_train.shape}, \
             x_valid: {x_valid.shape}, \
@@ -155,10 +165,11 @@ class TransformerData():
         """get src data for transformer encoder
         """
         
-        assert src_len <= len(x_train), "src_len must be less than or equal to train size"
+        if self.src_len is None:
+            self.src_len = len(x_train)
+            
+        assert self.src_len <= len(x_train) , "src_len must be less than or equal to train size"
         
-        if src_len == 0:
-            src_len = len(x_train)
         self.src = x_train[:src_len][:, -1, :].unsqueeze(0)
     
     def getLoaders(self, datas, batch_size):
@@ -172,23 +183,7 @@ class TransformerData():
         self.trainloader = loader(x_train, y_train, batch_size)
         self.validloader = loader(x_valid, y_valid, len(x_valid))
         self.testloader = loader(x_test, y_test, len(x_test))
-        
-    def prepareData(self, 
-        batch_size: int = 128, 
-        percentage_test: float = 0.2, 
-        percentage_valid: float = 0.2, 
-        src_len: int = 0
-        ):
-        
-        self.createVarTarget()
-        self.clean()
-        self.splitSize(percentage_test=percentage_test, percentage_valid=percentage_valid)
-        self.normalize()
-        X_list, y_list = self.windowXYByDate()
-        X, y = self.toTensor(X_list, y_list)
-        datas = self.trainTestSplit(X, y)
-        self.getSrc(datas[0], src_len)
-        self.getLoaders(datas, batch_size)
+
     
 if __name__ == "__main__":
     data = TransformerData(stock="2330.TW")

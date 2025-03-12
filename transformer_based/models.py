@@ -114,12 +114,13 @@ class Transformer(nn.Module):
         """
         NOTE:
         When validating, memory are passed by train memory
-        """
-        if src.size(1) != self.src_len:
+        ===
+        - Padding for different src len
+        if memory is None and src.size(1) != self.src_len:
             self.src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(device)
             src = F.pad(src, (0, 0, 0, self.src_len - src.size(1)))
             self.src_mask = ...
-            raise ValueError(f"src_len must be {self.src_len}, but got {src.size(1)}")
+        """
         if memory is None: 
             # Positional encode
             # src = self.pos_enc(src)

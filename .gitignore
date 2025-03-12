@@ -9,7 +9,7 @@ try.ipynb
 *Old Versions*
 *.pt*
 *.vscode*
-Temp
+*temp*
 Model-Transformer-FP16/
 Note.md
 __pycache__
