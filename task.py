@@ -21,7 +21,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     task = args.task
-    stock = args.stock
+    stock_list = args.stock
     MODEL = args.model
     
     """
@@ -43,7 +43,8 @@ if __name__ == "__main__":
             # model
             "name": MODEL,
             "epochs": 200,
-            "val_type": "loss",
+            # loss or  asset
+            "val_type": "asset",
             "optimizer": {
                 "type": "Adam",
                 "args":{
@@ -63,8 +64,10 @@ if __name__ == "__main__":
         
         ckpt_dir = "transformer_based/transformer-temp/"
         performance_dir = "transformer_based/transformer-result/"
+        
+        # Target stock data
         data = TransformerData(
-            stock=stock,
+            stock=stock_list[0],
             start_date=config["start_date"],
             end_date=config["end_date"],
             window=config["ntoken"],
@@ -80,21 +83,22 @@ if __name__ == "__main__":
             ntoken=config["ntoken"], 
             src_len=data.src_len,
         ).to(device)
+        trainer = TransformerTrainer
         
         
     if MODEL == "Decoder-Only":
         pass
     
     if task == "train":
-        predictor = TransformerTrainer(
-            stock_list=stock, 
+        trainer = trainer(
+            stock_list=stock_list, 
             data=data,
             model=model, 
             config=config,  
             dirs=[ckpt_dir, performance_dir]
         )
-        predictor.train()
+        trainer.train()
         
     if task == "test":
-        testor = Backtestor(stock, model=model, data=data, model_dir=model_dir)
+        testor = Backtestor(stock_list, model=model, data=data, model_dir=model_dir)
         testor.test(ckpts=[0, 20, 40, 60, 190], short=True)

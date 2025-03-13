@@ -27,14 +27,13 @@ class BaseTrainer:
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         ) -> None:
         
+        # target stock
+        self.stock = stock_list[0]   
         self.stock_list = stock_list
         self.ckpt_dir = dirs[0]
         self.performance_dir = dirs[1]
         self.device = device
         self.checkDir()
-        
-        # target stock
-        self.stock = stock_list[0]      
         
         # Config
         self.config = config
@@ -108,6 +107,7 @@ class BaseTrainer:
     def train(self):
         
         print(f"Start training stock {self.stock} model")
+        print(f"Validatin method: {self.val_type}")
         
         self._resume_checkpoint()
         

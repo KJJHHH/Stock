@@ -17,7 +17,7 @@ from numpy import inf
 # from logger import TensorboardWriter
 
 from transformer_based.datas import *
-from base_trainer.trainer import BaseTrainer
+from base.trainer import BaseTrainer
 from transformer_based.backtestor import Backtestor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
