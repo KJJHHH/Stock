@@ -125,11 +125,11 @@ class BaseTrainer:
             
             # Validating with return
             if self.val_type == "asset":
-                stop = self._val_asset(epoch)
+                stop = self._val_with_asset(epoch)
                 if stop:
                     break
             else:
-                stop = self._val_loss(epoch)
+                stop = self._val_with_loss(epoch)
                 if stop:
                     break
                     
@@ -172,10 +172,10 @@ class BaseTrainer:
             if load_best:
                 return str(self.ckpt_dir + f'{self.stock}_best.pth')
             
-            ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f))]
+            ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f)) and self.stock in f and "epoch" in f]
             if ckpts == []:
-                return None   
-            ckpt_epochs = [int(file.split(".")[0].split("-")[1]) for file in ckpts if self.stock in file and "epoch" in file]
+                return None  
+            ckpt_epochs = [int(file.split(".")[0].split("-")[1]) for file in ckpts]
             
             return str(self.ckpt_dir + f'epoch-{max(ckpt_epochs)}-{self.stock}.pth')
         
@@ -220,8 +220,8 @@ class BaseTrainer:
     def _model_validate(self):
         raise NotImplementedError
     @abstractmethod
-    def _val_asset(self):
+    def _val_with_asset(self):
         raise NotImplementedError
     @abstractmethod
-    def _val_loss(self):
+    def _val_with_loss(self):
         raise NotImplementedError

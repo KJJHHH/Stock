@@ -2,17 +2,23 @@
 Predict the daily percentile change for open and close price
 
 ## Usage
-### Train
+
+### Environment
+```bash
+# python 3.12
+# cuda 12.6
+pip install -r requirements.txt
 ```
+### Train
+```bash
 cd Stock
 python task.py train --model Transformer --stock 2330.TW
 ```
 ### Backtest
-```
+```bash
 cd Stock
 python task.py test --model Transformer --stock 2330.TW  
 ```
-
 
 ## Result
 ### Transformer
@@ -25,6 +31,7 @@ python task.py test --model Transformer --stock 2330.TW
 
 ### Resnet
 ...
+
 
 ## Directories
 ```

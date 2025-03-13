@@ -74,7 +74,7 @@ class TransformerTrainer(BaseTrainer):
         
         return loss_valid_mean / len(self.data.validloader)
     
-    def _val_asset(self, epoch):
+    def _val_with_asset(self, epoch):
         # Validate with return
         val_return, hist = Backtestor.testModel(self.model, self.data.validloader, self.data.src, short=True)
 
@@ -91,12 +91,12 @@ class TransformerTrainer(BaseTrainer):
         
         return False
     
-    def _val_loss(self, epoch):
+    def _val_with_loss(self, epoch):
         # Validate with loss
         loss_valid_mean = self._model_validate()
 
         if loss_valid_mean < self.best_val_result:
-            print(f'New best model found in epoch {epoch} with val loss: {self.best_val_result}')
+            print(f'New best model found in epoch {epoch} with val loss: {loss_valid_mean}')
             self.not_improve_cnt = 0
             self.best_val_result = loss_valid_mean
             self._save_checkpoint(epoch, save_best=True)
