@@ -1,83 +1,120 @@
-import numpy as np 
-import pickle
 import torch
-from sklearn.preprocessing import StandardScaler
-from utils import *
+from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 
+
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+from base.datas import BaseData
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def data(
-    stock: str = '2454.TW', 
-    num_class: int = 2, 
-    end_date: str = '2024-12-31',
-    batch_size: int = 64,
-    window: int = 10
-    ):
-    stock_price_data = fetch_stock_price(stock_symbol=stock, start_date='2012-01-02',end_date=end_date)
-    print(stock_price_data)
-
-    # pctchange: (today - yesterday)/yesterday
-    stock_price_data['do'] = stock_price_data['Open'].pct_change() * 100
-    stock_price_data['dh'] = stock_price_data['High'].pct_change() * 100
-    stock_price_data['dl'] = stock_price_data['Low'].pct_change() * 100
-    stock_price_data['dc'] = stock_price_data['Close'].pct_change() * 100
-    stock_price_data['dv'] = stock_price_data['Volume'].pct_change() * 100
-    
-    # do_1, dc_1, doc_1: tmr's information
-    stock_price_data['do_1'] = stock_price_data['do'].shift(-1)
-    stock_price_data['dc_1'] = stock_price_data['dc'].shift(-1)
-    stock_price_data['doc_1'] = \
-        ((stock_price_data['Close'].shift(-1) - stock_price_data['Open'].shift(-1))/stock_price_data['Open'].shift(-1))\
-        *100
-
-    stock_price_data = stock_price_data.dropna()
-    df = stock_price_data
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df = df.dropna()
-
-    df['Close_origin'] = df['Close']
-    scaler = StandardScaler()
-    scaler.fit(df[['do', 'dh', 'dl', 'dc', 'dv', 'Close']][:2500])
-    df[['do', 'dh', 'dl', 'dc', 'dv', 'Close']] = scaler.fit_transform(df[['do', 'dh', 'dl', 'dc', 'dv', 'Close']])
-
-
-    x, y, date = window_x_y(df, num_class, window)
-    X = process_x(x)    
-    X, x_test, y, y_test = train_test(X, y)
-    x_train, x_valid, y_train, y_valid = train_valid(X, y)
-    test_date = df.index[-len(y_test):]
-    print(f'x_train_len: {len(x_train)}, valid_len: {len(x_valid)}, test_len: {len(x_test)}')
-
-    trainloader, validloader, testloader = (
-        init_dataloader(
-            torch.tensor(x_train).to(dtype=torch.float32), 
-            torch.tensor(y_train).to(dtype=torch.float32), 
-            batch_size=batch_size), 
-        init_dataloader(
-            torch.tensor(x_valid).to(dtype=torch.float32), 
-            torch.tensor(y_valid).to(dtype=torch.float32), 
-            batch_size=batch_size),
-        init_dataloader(
-            torch.tensor(x_test).to(dtype=torch.float32), 
-            torch.tensor(y_test).to(dtype=torch.float32), 
-            batch_size=batch_size)
-        )    
-    
-    """
-    if num_class == 1:
-        with open('../DataLoader/dataloader_1.pk', 'wb') as f:
-            pickle.dump({'trainloader': trainloader, 'validloader': validloader, 'testloader': testloader}, f)
-    elif num_class == 2:
-        with open('../DataLoader/dataloader.pk', 'wb') as f:
-            pickle.dump({'trainloader': trainloader, 'validloader': validloader, 'testloader': testloader}, f)
-    with open('../DataLoader/dates.pk', 'wb') as f:
-        pickle.dump({'test': test_date}, f)
-    with open('../DataLoader/data_clean.pk', 'wb') as f:
-        pickle.dump(df, f)
-    with open('../DataLoader/src.pk', 'wb') as f:
-        pickle.dump(src, f)
-    """
+class CVBasedData(BaseData):
+    def __init__(self, 
+        stock: str, 
+        start_date: str = '2016-01-02',
+        end_date: str = '2024-12-31',
+        window: int = 50,
         
-    return trainloader, validloader, testloader, test_date, df
+        batch_size: int = 64, 
+        percentage_test: float = 0.05, 
+        percentage_valid: float = 0.05, 
+        ) -> None:
+        
+        super().__init__(stock, start_date, end_date, window, batch_size)
+
+        self._prepare_model_datas(percentage_test, percentage_valid)        
+    
+    def _prepare_model_datas(self, percentage_test: float = 0.2, percentage_valid: float = 0.2):
+        """get train, valid, test 
+        - preprocessing
+        - split data
+        - dataloader     
+        """
+        
+        self.data = self.fetchPrice()
+        self.data_origin = self.data.copy()
+        self.createVarTarget()
+        self.clean()
+        self.normalize()
+        
+        # windows and tensor
+        self._get_date()
+        X_list, y_list = self._window_Xy()
+        X, y = self.toTensor(X_list, y_list)
+        
+        # data sizes
+        self.splitSize(percentage_test, percentage_valid)        
+
+        # data split
+        x_train, x_test, y_train, y_test = self.split(X, y, self.test_len)
+        x_train, x_valid, y_train, y_valid = self.split(x_train, y_train, self.valid_len)
+        
+        # data for training
+        self.getLoaders((x_train, x_valid, x_test, y_train, y_valid, y_test), self.batch_size)
+        
+        # print data shape
+        print(f"""Data Shape: 
+        x_train: {x_train.shape}, 
+        x_valid: {x_valid.shape}, 
+        x_test: {x_test.shape}, 
+        y_train: {y_train.shape}, 
+        y_valid: {y_valid.shape}, 
+        y_test: {y_test.shape}
+        """)
+
+    def _get_date(self):
+        """
+        Get the date for start of train to test end
+        """
+        
+        # remove first window-1 and last one since y shift 1
+        self.dates = self.data.index[self.window-1:len(self.data)-1]
+        self.train_dates = ...
+        self.valid_dates = ...
+        self.test_dates = ...
+    
+    def _window_Xy(self): # df: before split
+        
+        x_list, y_list = [], []
+        
+        for i in tqdm(range(len(self.data)-self.window)): 
+            x_window = self.data.iloc[i:i+self.window]
+            y_window = self.data.iloc[i+1:i+self.window+1]  
+            x_values = x_window[['do', 'dh', 'dl', 'dc', 'dv', 'doc']].values  
+            y_values = y_window[['do', 'dh', 'dl', 'dc', 'dv', 'doc']].values
+            x_list.append(x_values)
+            y_list.append(y_values)
+        
+        assert len(x_list) == len(self.dates), "Mismatch time index and data"
+        
+        return x_list, y_list
+    
+    def _process_X(self, x):
+        N = len(x)
+        X = []
+        x = torch.tensor(x, dtype=torch.float32).to(device)
+        for i in tqdm(range(N)):
+            X_element = []
+            for j in range(self.window):
+                X_element.append(self._gaf(x[i][j])).unsqueeze(0)
+            X_element = torch.cat(X_element, dim=0).unsqueeze(0)
+            X.append(X_element)
+        X = torch.cat(X, dim=0)
+        return X
+    
+    def _gaf(X):
+        X = X.reshape(-1)
+        X_diff = X.unsqueeze(0) - X.unsqueeze(1) # Pairwise differences
+        GAF = torch.cos(X_diff)# Gramian Angular Field
+
+        return GAF
+
+if __name__ == "__main__":
+    
+    data = CVBasedData(stock='AAPL', percentage_test=0.05, percentage_valid=0.05)
