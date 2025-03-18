@@ -6,7 +6,7 @@ transformer-old
 try.ipynb
 *pytorch-template*/
 
-*Old Versions*
+Old Versions/
 *.pt*
 *.vscode*
 *temp*

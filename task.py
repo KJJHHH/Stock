@@ -1,9 +1,8 @@
 import torch
 
-from transformer_based.utils import *
-from transformer_based.datas import *
-from transformer_based.models import *
-from transformer_based.trainer import *
+from datas import *
+from models import *
+from trainers import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -24,6 +23,9 @@ if __name__ == "__main__":
     stock_list = args.stock
     MODEL = args.model
     
+    ckpt_dir = "results/" + MODEL + "-temp/"
+    performance_dir = "results" + MODEL + "-result/"
+    
     """
     Model dir: models in same model dir use same data
     |transformer_based
@@ -32,6 +34,7 @@ if __name__ == "__main__":
     |cv_based
     |----|...
     """
+    # MODEL type
     if MODEL == "Transformer": 
         
         config = {
@@ -62,11 +65,8 @@ if __name__ == "__main__":
             },
         }
         
-        ckpt_dir = "transformer_based/transformer-temp/"
-        performance_dir = "transformer_based/transformer-result/"
-        
         # Target stock data
-        data = TransformerData(
+        data = TransformerBasedData(
             stock=stock_list[0],
             start_date=config["start_date"],
             end_date=config["end_date"],
@@ -85,10 +85,50 @@ if __name__ == "__main__":
         ).to(device)
         trainer = TransformerTrainer
         
-        
     if MODEL == "Decoder-Only":
         pass
     
+    if MODEL == "Resnet":
+        
+        config = {
+            # data
+            "ntoken": 50,
+            "start_date": "2016-01-01",
+            "end_date": "2024-12-28",
+            
+            # model
+            "name": MODEL,
+            "epochs": 200,
+            # loss or  asset
+            "val_type": "asset",
+            "optimizer": {
+                "type": "Adam",
+                "args":{
+                    "lr": 0.001,
+                    "weight_decay": 0.00001,
+                    "amsgrad": True
+                }
+            },
+            "lr_scheduler": {
+                "type": "StepLR",
+                "args": {
+                    "step_size": 1,
+                    "gamma": 0.5
+                }
+            },
+        }
+        
+        data = CVBasedData(
+            stock=stock_list[0],
+            start_date=config["start_date"],
+            end_date=config["end_date"],
+            window=config["ntoken"],
+            batch_size=64,
+            )
+        model = ResNet(BasicBlock, [3, 4, 6, 3], 1).to(device)
+        trainer = ResnetTrainer
+    
+    # Tasks
     if task == "train":
         trainer = trainer(
             stock_list=stock_list, 

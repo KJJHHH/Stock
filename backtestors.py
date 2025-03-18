@@ -1,24 +1,16 @@
-
-import sys 
-sys.path.append('../')
 import matplotlib.pyplot as plt
-import numpy as np
-import pickle, json
 import torch
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from transformer_based.utils import *
-from transformer_based.datas import TransformerData
-from transformer_based.models import Transformer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Backtestor():
-    def __init__(self, stock, model, data, model_dir="./"):
+    def __init__(self, stock, model, data, model_dirs):
         self.stock = stock[0]
         self.data = data
         self.model = model
-        self.model_dir = model_dir
+        self.ckpt_dir = model_dirs["ckpt_dir"]
+        self.performance_dir = model_dirs["performance_dir"]
         
         self.test_loader = self.getTestLoader("test")
         self.test_len = self.getTestLen()
@@ -27,10 +19,11 @@ class Backtestor():
         print("Backtesting " + self.model.__name__ + " on " + self.stock)
         
     def loadModel(self, epoch):
+        # Load model
         if epoch == "best":
-            self.model.load_state_dict(torch.load(f'{self.model_dir}{self.model.__name__}-result/{self.stock}_best.pt'))
+            self.model.load_state_dict(...)
         else:
-            self.model.load_state_dict(torch.load(f'{self.model_dir}{self.model.__name__}-temp/{self.stock}_epoch_{epoch}.pt'))
+            self.model.load_state_dict(...)
     
     def getTestLoader(self, dataset = "test"):
         if dataset == "test":
@@ -58,9 +51,8 @@ class Backtestor():
             
         return test_data
     
-    
     @staticmethod
-    def testModel(model, loader, src, short, verbose=False):
+    def testTransformerModel(model, loader, src, short, verbose=False):
         
         def cumProduct(result, truth, short):
             truth[result >= 0] = 1 + truth[result >= 0]

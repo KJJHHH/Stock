@@ -26,10 +26,6 @@ class BaseData():
         self.window = window    
         self.batch_size = batch_size
         
-        """Shape
-        - loaders: (batch size, seq len, features)
-        - src: (1, total seq len, features)
-        """
         self.train_len = None
         self.valid_len = None
         self.test_len = None
@@ -42,6 +38,10 @@ class BaseData():
         self.train_dates = None
         self.valid_dates = None
         self.test_dates = None
+        
+        """
+        self._prepare_model_datas(percentage_test, percentage_valid) 
+        """
     
     def fetchPrice(self):
         
@@ -112,4 +112,16 @@ class BaseData():
         
     @abstractmethod
     def _prepare_model_datas(self, percentage_test: float, percentage_valid: float):
+        """get train, valid, test
+        TODO: 
+        - preprocessing
+        - split data
+        - dataloader     
+        """
+        self.data = self.fetchPrice()
+        self.data_origin = self.data.copy()
+        self.createVarTarget()
+        self.clean()
+        self.normalize()
+        ...
         raise NotImplementedError
