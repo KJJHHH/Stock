@@ -14,17 +14,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A simple argument parser example")
     parser.add_argument("task", help="train or test")  
     parser.add_argument("-m", "--model", help="Select model: [Transformer, Decoder only]")  
-    parser.add_argument("-s", "--stock", nargs='+', help="Enter stock id, eg. 2884.TW")  
+    parser.add_argument("-s", "--stock", help="Enter stock id, eg. 2884.TW")  
 
     # Parse arguments
     args = parser.parse_args()
 
     task = args.task
-    stock_list = args.stock
+    stock = args.stock
     MODEL = args.model
     
     ckpt_dir = "results/" + MODEL + "-temp/"
-    performance_dir = "results" + MODEL + "-result/"
+    performance_dir = "results/" + MODEL + "-result/"
     
     """
     Model dir: models in same model dir use same data
@@ -48,6 +48,7 @@ if __name__ == "__main__":
             "epochs": 200,
             # loss or  asset
             "val_type": "asset",
+            # optimizer, scheduler
             "optimizer": {
                 "type": "Adam",
                 "args":{
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         
         # Target stock data
         data = TransformerBasedData(
-            stock=stock_list[0],
+            stock=stock,
             start_date=config["start_date"],
             end_date=config["end_date"],
             window=config["ntoken"],
@@ -84,6 +85,7 @@ if __name__ == "__main__":
             src_len=data.src_len,
         ).to(device)
         trainer = TransformerTrainer
+        testor = TransformerBacktestor
         
     if MODEL == "Decoder-Only":
         pass
@@ -129,16 +131,17 @@ if __name__ == "__main__":
         trainer = ResnetTrainer
     
     # Tasks
+    dirs = {"ckpt_dir": ckpt_dir, "performance_dir": performance_dir}
     if task == "train":
         trainer = trainer(
-            stock_list=stock_list, 
+            stock_list=stock, 
             data=data,
             model=model, 
             config=config,  
-            dirs=[ckpt_dir, performance_dir]
+            dirs=dirs
         )
         trainer.train()
         
     if task == "test":
-        testor = Backtestor(stock_list, model=model, data=data, model_dir=model_dir)
-        testor.test(ckpts=[0, 20, 40, 60, 190], short=True)
+        testor = testor(stock, model=model, data=data, dirs=dirs)
+        testor.plot_result(ckpts=[0, 20, 40, 60, 190], short=True)

@@ -16,24 +16,24 @@ from abc import abstractmethod
 from numpy import inf
 # from logger import TensorboardWriter
 
-# Save: 'epoch-{}-{}.pth'.format(epoch, self.stock)
+# Save: 'epoch-{}-{}.pt'.format(epoch, self.stock)
 class BaseTrainer:
     def __init__(self, 
-        stock_list, 
+        stock, 
         data,
         model, 
         config,  
         dirs,
+        short = True,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         ) -> None:
         
         # target stock
-        self.stock = stock_list[0]   
-        self.stock_list = stock_list
-        self.ckpt_dir = dirs[0]
-        self.performance_dir = dirs[1]
+        self.stock = stock
+        self.ckpt_dir = dirs["ckpt_dir"]
+        self.performance_dir = dirs["performance_dir"]
         self.device = device
-        self.checkDir()
+        self._check_dir()
         
         # Config
         self.config = config
@@ -59,9 +59,6 @@ class BaseTrainer:
             self.best_val_result = float("-inf")
         
         # Data  
-        """datas
-        - srcs_trained: list of stocks as src are trained
-        """
         self.data = data
         
         # Accelerator setup
@@ -95,15 +92,8 @@ class BaseTrainer:
             self.model, self.optimizer, self.data.trainloader, self.data.validloader, self.scheduler
         )
         
-    def checkDir(self):
-        file_lists = [self.ckpt_dir, self.performance_dir]
-        for file in file_lists:
-            if not os.path.exists(file):
-                os.makedirs(file)
-                print(f"Created directory: {file}")
-            else:
-                print(f"Directory already exists: {file}")
-                
+        self.short = short
+    
     def train(self):
         
         print(f"Start training stock {self.stock} model")
@@ -152,39 +142,27 @@ class BaseTrainer:
             'config': self.config,
             'not_improve_cnt': self.not_improve_cnt,
             'best_val_result': self.best_val_result,
-            'srcs_trained': self.srcs_trained,
         }
         if save_best:
-            best_path = str(self.ckpt_dir + f'{self.stock}_best.pth')
+            best_path = str(self.ckpt_dir + f'{self.stock}-best.pth')
             torch.save(state, best_path)
             return None
-        filename = str(self.ckpt_dir + 'epoch-{}-{}.pth'.format(epoch, self.stock))
+        filename = str(self.ckpt_dir + '{}-{}.pth'.format(self.stock, epoch))
         torch.save(state, filename)
 
-    def _resume_checkpoint(self, load_best=False):
+    def _resume_checkpoint(self):
         """
         Resume from saved checkpoints at: 'epoch-{}-{}.pth'.format(epoch, self.stock)
 
         :param resume_path: Checkpoint path to be resumed
         """
         
-        def resumePath(load_best):
-            if load_best:
-                return str(self.ckpt_dir + f'{self.stock}_best.pth')
-            
-            ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f)) and self.stock in f and "epoch" in f]
-            if ckpts == []:
-                return None  
-            ckpt_epochs = [int(file.split(".")[0].split("-")[1]) for file in ckpts]
-            
-            return str(self.ckpt_dir + f'epoch-{max(ckpt_epochs)}-{self.stock}.pth')
-        
-        # Find resume path
-        resume_path = resumePath(load_best)
-        
-        # No checkpoint found
-        if resume_path is None:
-            return None
+        # Get resume path
+        ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f)) and self.stock in f and "best" not in f]
+        if ckpts == []:
+            return None  
+        ckpt_epochs = [int(file.split("-")[1].split(".")[0]) for file in ckpts]
+        resume_path = str(self.ckpt_dir + f'{self.stock}-{max(ckpt_epochs)}.pth')
         
         # Load checkpoint
         print("Loading checkpoint: {}".format(resume_path))
@@ -196,9 +174,6 @@ class BaseTrainer:
             "This may yield an exception while state_dict is being loaded."
         self.model.load_state_dict(checkpoint['state_dict'])
 
-        # load best used in backtesting, no need for load others
-        if load_best:
-            return None
         
         # load optimizer state from checkpoint only when optimizer type is not changed.
         assert checkpoint['config']['optimizer']['type'] == self.config['optimizer']['type'], \
@@ -210,8 +185,50 @@ class BaseTrainer:
         self.start_epoch = checkpoint['epoch'] + 1
         self.not_improve_cnt = checkpoint['not_improve_cnt']
         self.best_val_result = checkpoint['best_val_result']  
-        self.srcs_trained = checkpoint['srcs_trained']
         
+    def _val_with_asset(self, epoch):
+        # Validate with return
+        val_return = self._model_backtest()
+
+        if val_return > self.best_val_result:
+            print(f'New best model found with return {val_return}')
+            self.not_improve_cnt = 0
+            self.best_val_result = val_return
+            self._save_checkpoint(epoch, save_best=True)
+        else:
+            self.not_improve_cnt += 1
+            if self.not_improve_cnt >= 100:
+                print(f'Early stopping at epoch {epoch}')
+                return True
+        
+        return False
+    
+    def _val_with_loss(self, epoch):
+        # Validate with loss
+        loss_valid_mean = self._model_validate()
+
+        if loss_valid_mean < self.best_val_result:
+            print(f'New best model found in epoch {epoch} with val loss: {loss_valid_mean}')
+            self.not_improve_cnt = 0
+            self.best_val_result = loss_valid_mean
+            self._save_checkpoint(epoch, save_best=True)
+        else:
+            self.not_improve_cnt += 1
+            if self.not_improve_cnt >= 100:
+                print(f'Early stopping at epoch {epoch}')
+                return True
+        
+        return False
+    
+    def _check_dir(self):
+        file_lists = [self.ckpt_dir, self.performance_dir]
+        for file in file_lists:
+            if not os.path.exists(file):
+                os.makedirs(file)
+                print(f"Created directory: {file}")
+            else:
+                print(f"Directory already exists: {file}")
+    
 
     @abstractmethod
     def _model_train(self):
@@ -220,8 +237,5 @@ class BaseTrainer:
     def _model_validate(self):
         raise NotImplementedError
     @abstractmethod
-    def _val_with_asset(self):
-        raise NotImplementedError
-    @abstractmethod
-    def _val_with_loss(self):
+    def _model_backtest(self):
         raise NotImplementedError

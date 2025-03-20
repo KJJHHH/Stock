@@ -1,116 +1,41 @@
-import matplotlib.pyplot as plt
+from __future__ import annotations
 import torch
-import pandas as pd
+
+from base.base_testor import Backtestor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class Backtestor():
-    def __init__(self, stock, model, data, model_dirs):
-        self.stock = stock[0]
-        self.data = data
-        self.model = model
-        self.ckpt_dir = model_dirs["ckpt_dir"]
-        self.performance_dir = model_dirs["performance_dir"]
-        
-        self.test_loader = self.getTestLoader("test")
-        self.test_len = self.getTestLen()
-        self.test_dates = self.getTestTime()
-        
-        print("Backtesting " + self.model.__name__ + " on " + self.stock)
-        
-    def loadModel(self, epoch):
-        # Load model
-        if epoch == "best":
-            self.model.load_state_dict(...)
-        else:
-            self.model.load_state_dict(...)
-    
-    def getTestLoader(self, dataset = "test"):
-        if dataset == "test":
-            loader = self.data.testloader
-        if dataset == "valid":
-            loader = self.data.validloader
-        if dataset == "train":
-            loader = self.data.trainloader
-
-        return loader
-    
-    def getTestLen(self):
-        test_len = 0
-        for x, y in self.test_loader:
-            test_len += x.shape[0]
-        return test_len
-    
-    def getTestTime(self):
-        return self.data.data.index[-self.test_len:]
-
-    def testBuyHold(self):
-        
-        test_data = self.data.data_origin.loc[self.test_dates]["Adj Close"]
-        test_data /= test_data.iloc[0]
-            
-        return test_data
+class TransformerBacktestor(Backtestor):
+    def __init__(self, stock, model, data, dirs):
+        super().__init__(stock, model, data, dirs)
     
     @staticmethod
-    def testTransformerModel(model, loader, src, short, verbose=False):
+    def _test_method(model, data):
         
-        def cumProduct(result, truth, short):
-            truth[result >= 0] = 1 + truth[result >= 0]
-            if short:
-                truth[result < 0] = 1 - truth[result < 0]
-            else:
-                truth[result < 0] = 1
-            return torch.cumprod(truth, dim=0)
+        loader = data[0]
+        src = data[1]
         
-        with torch.no_grad():
-            # testloader number of batch = 1
-            model.eval()
+        model.eval()
+
+        with torch.no_grad(): # testloader number of batch = 1
             for x_test, y_test in loader:
                 x_test, y_test, src = x_test.to(device), y_test.to(device), src.to(device)
                 _, result = model(src=src, tgt=x_test)
                 result = result[:, -1, -1]
                 truth = y_test[:, -1, -1]
-                
-        asset_hist = cumProduct(result, truth, short)
-        asset_hist = asset_hist.cpu().numpy()
-        
-        if verbose:
-            print(result)
-            
-        return asset_hist[-1], asset_hist
-    
-    def test(self, ckpts: list = [], short: bool = True):
-        """
-        Backtest with test set
-        """
-        
-        ckpts.append("best")
-        ckpts.append("buyhold")
-        
-        plt.figure(figsize=(10, 6)) 
-        
-        for epoch in ckpts:
-            
-            assert epoch is not int or epoch % 10 == 0, "Epoch must be multiple of 10"
-            
-            if epoch == "buyhold":
-                plt.plot(self.testBuyHold(), linestyle="dashed", label=f"BuyHold")  # Buy & Hold strategy
-                continue
-                
-            print(f"Predicting epoch {epoch}...")
-            self.loadModel(epoch)        
-            asset, asset_hist = self.testModel(self.model, self.test_loader, self.data.src, short, verbose=True)
-            df = pd.DataFrame({"Model": asset_hist,}).set_index(self.test_dates)
-            plt.plot(df["Model"], label=f"Model Epoch {epoch}")   # Model performance
-        
-        
-        plt.xlabel("Time")
-        plt.ylabel("Portfolio Value")
-        plt.title(f"Model vs Buy & Hold Strategy for {self.stock}")
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(f"{self.model_dir}{self.model.__name__}-result/{self.stock}.png", dpi=300, bbox_inches="tight")
-        plt.show()
-        
+        return result, truth
 
 
+class ResnetBacktestor(Backtestor):
+    def _backtest_method(self, model, data):
+        loader = data
+        with torch.no_grad():
+            # testloader number of batch = 1
+            model.eval()
+            for x_test, y_test in loader:
+                x_test, y_test, src = x_test.to(device), y_test.to(device), src.to(device)
+                result = model(src=src, tgt=x_test)
+                result = result
+                truth = y_test
+                
+        return result, truth

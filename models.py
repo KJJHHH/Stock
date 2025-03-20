@@ -125,7 +125,7 @@ class Transformer(nn.Module):
             # Positional encode
             # src = self.pos_enc(src)
             # Encoder
-            memory = self.transformer_encoder(src, self.src_mask) 
+            memory = self.transformer_encoder(src, self.src_mask.to(device)) 
             
         # For decoder input
         memory_ = memory[0].repeat(tgt.size(0), 1, 1)
