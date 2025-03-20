@@ -23,9 +23,9 @@ python task.py test --model Transformer --stock 2330.TW
 ## Result
 ### Transformer
 - Stock 2882
-![2882 performance](https://github.com/KJJHHH/Stock/blob/main/transformer_based/transformer-result/2882.TW.png)
+![2882 performance](https://github.com/KJJHHH/Stock/blob/main/Transformer_based/transformer-result/2882.TW.png)
 - Stock 2884
-![2884 performance](https://github.com/KJJHHH/Stock/blob/main/transformer_based/transformer-result/2884.TW.png)
+![2884 performance](https://github.com/KJJHHH/Stock/blob/main/Transformer_based/transformer-result/2884.TW.png)
 ### Decoder only
 ...
 
