@@ -10,19 +10,21 @@ Predict the daily percentile change for open and close price
 pip install -r requirements.txt
 ```
 ### Train and backtest
-- arg[0]: train / test (backtest)
+- arg[0]: to train / test (backtest)
 - arg[1]: model name
-- arg[2]: stock
+- arg[2]: stock list
 
 #### Train
 ```bash
 cd Stock
-python task.py train --model Transformer --stock 2330.TW
+python main.py train --model Transformer --stock 2330.TW
+# train 2330.TW with multiple stock
+python main.py train --model Transformer --stock 2330.TW 2454.TW
 ```
 #### Backtest
 ```bash
 cd Stock
-python task.py test --model Transformer --stock 2330.TW  
+python main.py test --model Transformer --stock 2330.TW  
 ```
 
 ## Result

@@ -46,7 +46,7 @@ if __name__ == "__main__":
             
             # model
             "name": MODEL,
-            "epochs": 200,
+            "epochs": 2,
             # loss or  asset
             "val_type": "asset",
             # optimizer, scheduler

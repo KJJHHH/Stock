@@ -38,10 +38,8 @@ class TransformerTrainer(BaseTrainer):
         dirs,
         ) -> None:       
         
-        
         # Data  
-        self.memory = None
-        
+        self.memory = None        
         
         super().__init__(stock_list, config, dirs)
         
@@ -57,12 +55,10 @@ class TransformerTrainer(BaseTrainer):
             ntoken=self.config["ntoken"], 
         ).to(device)
     
-    # DAta
+    # Data
     def _update_data(self):
         self.data = TransformerData(
             stock=self.stock,
-            start_date=self.config["start_date"],
-            end_date=self.config["end_date"],
             window=self.config["ntoken"],
             batch_size=64,
             )

@@ -30,10 +30,13 @@ class BaseTrainer:
         self.stock = None
         self.stock_target = stock_list[0]
         self.stock_list = stock_list
+        self.stock_trained = []
+        self.file_prefix = "-".join(stock_list)
         self.ckpt_dir = dirs["ckpt_dir"]
         self.performance_dir = dirs["performance_dir"]
         self.device = device
         self._check_dir()
+        
         
         # Config
         self.config = config
@@ -105,10 +108,7 @@ class BaseTrainer:
     
     def _train(self):
         
-        print(f"Start training stock {self.stock} model")
-        print(f"Validatin method: {self.val_type}")
-        
-        self._resume_checkpoint()
+        print(f"Start training stock {self.stock}")
         
         for epoch in range(self.start_epoch, self.epochs):
             # Train
@@ -135,11 +135,20 @@ class BaseTrainer:
             print(f"Epoch {epoch} | training loss: {loss_train_mean:.3f}")
     
     def train(self):
+        
+        print(f"Validatin method: {self.val_type}")
+        
+        self._resume_checkpoint()
+        
         for stock in self.stock_list:
+            if stock in self.stock_trained:
+                print(f"Stock {stock} already trained")
+                continue
             self.stock = stock
             self._update_data()
             self._accelerate()
             self._train()
+            self.stock_trained.append(self.stock)
     
     def _save_checkpoint(self, epoch, save_best=False):
         """
@@ -153,6 +162,7 @@ class BaseTrainer:
         state = {
             'arch': arch,
             'epoch': epoch,
+            'stock_trained': self.stock_trained,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(), # learning rate will change
             'config': self.config,
@@ -160,11 +170,13 @@ class BaseTrainer:
             'best_val_result': self.best_val_result,
         }
         if save_best:
-            best_path = str(self.ckpt_dir + f'{self.stock}-best.pth')
+            file = f"{self.file_prefix}-best.pth"
+            best_path = str(self.ckpt_dir + file)
             torch.save(state, best_path)
-            return None
-        filename = str(self.ckpt_dir + '{}-{}.pth'.format(self.stock, epoch))
-        torch.save(state, filename)
+        else:
+            file = '{}-{}.pth'.format(self.file_prefix, epoch) 
+            filename = str(self.ckpt_dir + file)
+            torch.save(state, filename)
 
     def _resume_checkpoint(self):
         """
@@ -174,11 +186,12 @@ class BaseTrainer:
         """
         
         # Get resume path
-        ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f)) and self.stock in f and "best" not in f]
+        ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f)) and self.file_prefix in f and "best" not in f]
         if ckpts == []:
             return None  
-        ckpt_epochs = [int(file.split("-")[1].split(".")[0]) for file in ckpts]
-        resume_path = str(self.ckpt_dir + f'{self.stock}-{max(ckpt_epochs)}.pth')
+        ckpt_epochs = [int(file.split("-")[-1].split(".")[0]) for file in ckpts]
+        file = '{}-{}.pth'.format(self.file_prefix, max(ckpt_epochs)) 
+        resume_path = str(self.ckpt_dir + file)
         
         # Load checkpoint
         print("Loading checkpoint: {}".format(resume_path))
@@ -201,6 +214,7 @@ class BaseTrainer:
         self.start_epoch = checkpoint['epoch'] + 1
         self.not_improve_cnt = checkpoint['not_improve_cnt']
         self.best_val_result = checkpoint['best_val_result']  
+        self.stock_trained = checkpoint['stock_trained']
         
     def _val_with_asset(self, epoch):
         # Validate with return

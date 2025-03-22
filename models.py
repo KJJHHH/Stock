@@ -61,8 +61,8 @@ class Transformer(nn.Module):
         self.src_len = src_len
         
         # Positional encoding
-        self.pos_enc = PositionalEncoding(d_model, src_len)
-        self.pos_dec = PositionalEncoding(d_model, ntoken)
+        # self.pos_enc = PositionalEncoding(d_model, src_len)
+        # self.pos_dec = PositionalEncoding(d_model, ntoken)
         
         # Mask
         # self.src_mask = nn.Transformer.generate_square_subsequent_mask(self.src_len)
