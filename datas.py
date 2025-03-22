@@ -8,7 +8,7 @@ from base.base_data import BaseData
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class TransformerBasedData(BaseData):
+class TransformerData(BaseData):
     def __init__(self,
         stock: str, 
         start_date: str = '2016-01-02',
@@ -76,7 +76,7 @@ class TransformerBasedData(BaseData):
             
         assert self.src_len <= len(x_train) , "src_len must be less than or equal to train size"
         
-        self.src = x_train[:src_len][:, -1, :].unsqueeze(0)
+        self.src = x_train[:src_len][:, -1, :].unsqueeze(0).to(device)
     
     def _get_date(self):
         """
@@ -210,7 +210,7 @@ class CVBasedData(BaseData):
 
 if __name__ == "__main__":
     
-    data = CVBasedData(stock='AAPL', percentage_test=0.05, percentage_valid=0.05)
-    data = TransformerBasedData(stock="2330.TW")
-    print(data.src.shape)
-    print(len(data.trainloader))
+    data_class = CVBasedData(stock='AAPL', percentage_test=0.05, percentage_valid=0.05)
+    data_class = TransformerData(stock="2330.TW")
+    print(data_class.src.shape)
+    print(len(data_class.trainloader))

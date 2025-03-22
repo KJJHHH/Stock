@@ -19,9 +19,7 @@ from numpy import inf
 # Save: 'epoch-{}-{}.pt'.format(epoch, self.stock)
 class BaseTrainer:
     def __init__(self, 
-        stock, 
-        data,
-        model, 
+        stock_list, 
         config,  
         dirs,
         short = True,
@@ -29,7 +27,9 @@ class BaseTrainer:
         ) -> None:
         
         # target stock
-        self.stock = stock
+        self.stock = None
+        self.stock_target = stock_list[0]
+        self.stock_list = stock_list
         self.ckpt_dir = dirs["ckpt_dir"]
         self.performance_dir = dirs["performance_dir"]
         self.device = device
@@ -59,14 +59,14 @@ class BaseTrainer:
             self.best_val_result = float("-inf")
         
         # Data  
-        self.data = data
+        self.data = None
         
         # Accelerator setup
         self.accelerator = Accelerator(mixed_precision='fp16')
         self.device = self.accelerator.device
         
         # Model, loss, optimizer, scheduler
-        self.model = model
+        self.model = self._build_model()
         self.model_best = self.model
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(
@@ -80,7 +80,10 @@ class BaseTrainer:
             step_size=self.scheduler_step, 
             gamma=self.scheduler_gamma
         )        
+    
+        self.short = short
         
+    def _accelerate(self):    
         # Prepare with accelerator
         (
             self.model,
@@ -92,9 +95,15 @@ class BaseTrainer:
             self.model, self.optimizer, self.data.trainloader, self.data.validloader, self.scheduler
         )
         
-        self.short = short
+    @abstractmethod
+    def _update_data(self):
+        raise NotImplementedError
     
-    def train(self):
+    @abstractmethod
+    def _build_model(self):
+        raise NotImplementedError
+    
+    def _train(self):
         
         print(f"Start training stock {self.stock} model")
         print(f"Validatin method: {self.val_type}")
@@ -124,6 +133,13 @@ class BaseTrainer:
                     break
                     
             print(f"Epoch {epoch} | training loss: {loss_train_mean:.3f}")
+    
+    def train(self):
+        for stock in self.stock_list:
+            self.stock = stock
+            self._update_data()
+            self._accelerate()
+            self._train()
     
     def _save_checkpoint(self, epoch, save_best=False):
         """

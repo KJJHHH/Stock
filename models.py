@@ -65,8 +65,8 @@ class Transformer(nn.Module):
         self.pos_dec = PositionalEncoding(d_model, ntoken)
         
         # Mask
-        self.src_mask = nn.Transformer.generate_square_subsequent_mask(self.src_len)
-        self.tgt_mask = nn.Transformer.generate_square_subsequent_mask(self.ntoken)
+        # self.src_mask = nn.Transformer.generate_square_subsequent_mask(self.src_len)
+        # self.tgt_mask = nn.Transformer.generate_square_subsequent_mask(self.ntoken)
 
         # Transformer
         """
@@ -125,7 +125,8 @@ class Transformer(nn.Module):
             # Positional encode
             # src = self.pos_enc(src)
             # Encoder
-            memory = self.transformer_encoder(src, self.src_mask.to(device)) 
+            src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(device)
+            memory = self.transformer_encoder(src, src_mask) 
             
         # For decoder input
         memory_ = memory[0].repeat(tgt.size(0), 1, 1)
@@ -133,7 +134,8 @@ class Transformer(nn.Module):
         # Positional encode
         # tgt = self.pos_dec(tgt)
         # Decoder
-        output = self.transformer_decoder(tgt=tgt, tgt_mask=self.tgt_mask, memory=memory_) 
+        tgt_mask = nn.Transformer.generate_square_subsequent_mask(tgt.size(1)).to(device)
+        output = self.transformer_decoder(tgt=tgt, tgt_mask=tgt_mask, memory=memory_) 
         
         # Linear
         ...

@@ -18,7 +18,8 @@ from numpy import inf
 
 from datas import *
 from base.base_trainer import BaseTrainer
-from Stock.backtestors import *
+from backtestors import *
+from models import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -30,19 +31,42 @@ Future update:
 """
 
 class TransformerTrainer(BaseTrainer):
+    
     def __init__(self, 
         stock_list, 
-        data,
-        model, 
         config,  
         dirs,
-        ) -> None:
-        super().__init__(stock_list, data, model, config, dirs, device)
+        ) -> None:       
+        
         
         # Data  
-        self.data_src = data.src.to(device)
         self.memory = None
         
+        
+        super().__init__(stock_list, config, dirs)
+        
+    # Model
+    def _build_model(self):
+        return Transformer(
+            d_model=6, 
+            dropout=0.5, 
+            d_hid=128, 
+            nhead=2, 
+            nlayers_e=64, 
+            nlayers_d=16, 
+            ntoken=self.config["ntoken"], 
+        ).to(device)
+    
+    # DAta
+    def _update_data(self):
+        self.data = TransformerData(
+            stock=self.stock,
+            start_date=self.config["start_date"],
+            end_date=self.config["end_date"],
+            window=self.config["ntoken"],
+            batch_size=64,
+            )
+    
     # Transformer function
     def _model_train(self):
         loss_train_mean = 0
@@ -50,7 +74,7 @@ class TransformerTrainer(BaseTrainer):
         for x, y in tqdm(self.data.trainloader): 
             
             self.optimizer.zero_grad()       
-            self.memory, outputs = self.model(src=self.data_src, tgt=x)    
+            self.memory, outputs = self.model(src=self.data.src, tgt=x)    
             loss = self.criterion(outputs, y)
             self.accelerator.backward(loss)
             self.optimizer.step()
@@ -70,10 +94,11 @@ class TransformerTrainer(BaseTrainer):
         return loss_valid_mean / len(self.data.validloader)
     
     def _model_backtest(self):
-        asset_hist = TransformerBacktestor.test_model(TransformerBacktestor._test_method, self.model, (self.data.validloader, self.data_src), short=True, verbose=False)
+        asset_hist = TransformerBacktestor.test_model(TransformerBacktestor._test_method, self.model, (self.data.validloader, self.data.src), short=True, verbose=False)
         return asset_hist[-1]
     
     def _update_src(self, src):
+        self.data.src = ...
         """
         self.data_src = src.to(self.device)
         self.srcs_trained.append(self.stock)
