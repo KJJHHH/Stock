@@ -1,6 +1,12 @@
 # Stock
 Predict the daily percentile change for open and close price
 
+## Pending updates
+- normalize tensor
+- use Transformer, not encoder, decoder
+- use training technics from attention is all you need
+- use other model
+
 ## Usage
 
 ### Environment

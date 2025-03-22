@@ -23,6 +23,7 @@ class TransformerBacktestor(Backtestor):
                 _, result = model(src=src, tgt=x_test)
                 result = result[:, -1, -1]
                 truth = y_test[:, -1, -1]
+        print(truth)
         return result, truth
 
 

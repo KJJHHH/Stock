@@ -53,13 +53,11 @@ class BaseTrainer:
         # Logger
         # self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
         
-        # Init training state
-        self.start_epoch = 0
-        self.not_improve_cnt = 0
-        if self.val_type == "loss":
-            self.best_val_result = float("inf")
-        else:
-            self.best_val_result = float("-inf")
+        # Init training control
+        self.start_epoch = ...
+        self.not_improve_cnt = ...
+        self.best_val_result = ...
+        self._init_training_control()
         
         # Data  
         self.data = None
@@ -85,7 +83,15 @@ class BaseTrainer:
         )        
     
         self.short = short
-        
+    
+    def _init_training_control(self):
+        self.start_epoch = 0
+        self.not_improve_cnt = 0
+        if self.val_type == "loss":
+            self.best_val_result = float("inf")
+        else:
+            self.best_val_result = float("-inf")
+    
     def _accelerate(self):    
         # Prepare with accelerator
         (
@@ -141,10 +147,13 @@ class BaseTrainer:
         self._resume_checkpoint()
         
         for stock in self.stock_list:
+            
             if stock in self.stock_trained:
                 print(f"Stock {stock} already trained")
                 continue
+            
             self.stock = stock
+            self._init_training_control()
             self._update_data()
             self._accelerate()
             self._train()

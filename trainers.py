@@ -23,13 +23,6 @@ from models import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-""""
-Future update:
-- Add different model to fit this predictor
-- Use differnet src data to train transformer
-- Train from stored model
-"""
-
 class TransformerTrainer(BaseTrainer):
     
     def __init__(self, 
@@ -39,7 +32,8 @@ class TransformerTrainer(BaseTrainer):
         ) -> None:       
         
         # Data  
-        self.memory = None        
+        self.memory = ...
+        self.src_len = ...    
         
         super().__init__(stock_list, config, dirs)
         
@@ -57,11 +51,31 @@ class TransformerTrainer(BaseTrainer):
     
     # Data
     def _update_data(self):
-        self.data = TransformerData(
-            stock=self.stock,
-            window=self.config["ntoken"],
-            batch_size=64,
-            )
+        """ Only udpate src 
+        """
+        if self.stock == self.stock_target:
+            self.data = TransformerData(
+                stock=self.stock,
+                window=self.config["ntoken"],
+                batch_size=64,
+                )
+            self.src_len = self.data.src.shape[1]
+        else:
+            self.data.src = TransformerData(
+                stock=self.stock,
+                window=self.config["ntoken"],
+                batch_size=64,
+                ).src
+            if self.data.src.shape[1] > self.src_len:
+                self.data.src = self.data.src[:, :self.src_len, :]
+            if self.data.src.shape[1] < self.src_len:
+                self.data.src = torch.cat(
+                    (
+                        self.data.src, 
+                        torch.zeros(
+                            (self.data.src.shape[0], self.src_len - self.data.src.shape[1], self.data.src.shape[2]),
+                            device=self.data.src.device)
+                    ), dim=1)
     
     # Transformer function
     def _model_train(self):
@@ -93,7 +107,7 @@ class TransformerTrainer(BaseTrainer):
         asset_hist = TransformerBacktestor.test_model(TransformerBacktestor._test_method, self.model, (self.data.validloader, self.data.src), short=True, verbose=False)
         return asset_hist[-1]
     
-    def _update_src(self, src):
+    def _update_(self, src):
         self.data.src = ...
         """
         self.data_src = src.to(self.device)
@@ -179,7 +193,7 @@ class ResnetTrainer(BaseTrainer):
         
         return False
     
-    def _update_src(self, src):
+    def _update_data(self, src):
         """
         self.data_src = src.to(self.device)
         self.srcs_trained.append(self.stock)

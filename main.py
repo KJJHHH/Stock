@@ -116,6 +116,7 @@ if __name__ == "__main__":
     
     # Tasks
     dirs = {"ckpt_dir": ckpt_dir, "performance_dir": performance_dir}
+    
     if task == "train":
         trainer = trainer(
             stock_list=stock_list, 

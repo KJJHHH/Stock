@@ -82,7 +82,7 @@ class TransformerData(BaseData):
             torch.tensor(X_test, dtype = torch.float32), torch.tensor(y_test, dtype = torch.float32), \
             torch.tensor(X_valid, dtype = torch.float32), torch.tensor(y_valid, dtype = torch.float32)
         
-        self.src_len = X_train.shape[1]        
+        self.src_len = X_train.shape[0]        
         self.__get_src(X_train, self.src_len)
         self.getLoaders((X_train, y_train, X_test, y_test, X_valid, y_valid), self.batch_size)
         
