@@ -1,11 +1,6 @@
 # Stock
 Predict the daily percentile change for open and close price
 
-## Pending updates
-- normalize tensor
-- use Transformer, not encoder, decoder
-- use training technics from attention is all you need
-- use other model
 
 ## Usage
 
@@ -39,12 +34,10 @@ python main.py test --model Transformer --stock 2330.TW
 ![2882 performance](https://github.com/KJJHHH/Stock/blob/main/results/Transformer-result/2882.TW.png)
 - Stock 2884
 ![2884 performance](https://github.com/KJJHHH/Stock/blob/main/results/Transformer-result/2884.TW.png)
-### Decoder only
-...
 
-### Resnet
-...
-
+## Pending updates
+- Decoder only model
+- Resnet model
 
 ## Directories
 ```project_root/
