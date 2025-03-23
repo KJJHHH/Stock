@@ -16,14 +16,13 @@ class TransformerBacktestor(Backtestor):
         src = data[1]
         
         model.eval()
-
         with torch.no_grad(): # testloader number of batch = 1
             for x_test, y_test in loader:
                 x_test, y_test, src = x_test.to(device), y_test.to(device), src.to(device)
-                _, result = model(src=src, tgt=x_test)
+                result = model(src=src, tgt=x_test)
                 result = result[:, -1, -1]
                 truth = y_test[:, -1, -1]
-        print(truth)
+        
         return result, truth
 
 

@@ -7,7 +7,7 @@
     "end_date": "2024-12-31",
     
     "epochs": 50,
-    "batch_size": 64,
+    "batch_size": 8,
     "val_type": "asset",
     "optimizer": {
         "type": "Adam",
@@ -23,5 +23,12 @@
             "step_size": 1,
             "gamma": 0.5
         }
-    }
+    },    
+
+    "d_model": 6,
+    "dropout": 0.1, 
+    "d_hid": 128, 
+    "nhead": 2, 
+    "nlayers_e": 6, 
+    "nlayers_d": 6
 }

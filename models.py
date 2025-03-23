@@ -69,6 +69,14 @@ class Transformer(nn.Module):
         # self.tgt_mask = nn.Transformer.generate_square_subsequent_mask(self.ntoken)
 
         # Transformer
+        self.transformer = torch.nn.Transformer(
+            d_model=d_model, nhead=nhead, 
+            num_encoder_layers=nlayers_e, num_decoder_layers=nlayers_d, 
+            dim_feedforward=d_hid, dropout=dropout, 
+            custom_encoder=None, custom_decoder=None, 
+            layer_norm_eps=1e-05, batch_first=True)
+        
+        # Encoder and decoder
         """
         - Output of encoder: (1, seq, d_model)
         - batch_first (bool) - If True, then the input and output tensors are provided as (batch, seq, feature). Default: False (seq, batch, feature).
@@ -77,7 +85,6 @@ class Transformer(nn.Module):
                 torch.full((10, 10), float("-inf"), dtype=torch.float32, device=device),
                 diagonal=1,)
         - About attention mask and key feature mask: https://www.zhihu.com/question/455164736
-        """
         encoder_layers = TransformerEncoderLayer(
             d_model=d_model, 
             nhead=nhead, 
@@ -96,12 +103,13 @@ class Transformer(nn.Module):
         
         self.linear1 = nn.Linear(d_model, 1)
         self.linear2 = nn.Linear(d_model, 1)
+        """
+        
 
     def forward(
         self, 
         tgt: torch.tensor, 
         src: torch.tensor = None, 
-        memory: torch.tensor = None,
         ) -> torch.tensor:
         
         """
@@ -121,26 +129,17 @@ class Transformer(nn.Module):
             src = F.pad(src, (0, 0, 0, self.src_len - src.size(1)))
             self.src_mask = ...
         """
-        if memory is None: 
-            # Positional encode
-            # src = self.pos_enc(src)
-            # Encoder
-            src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(device)
-            memory = self.transformer_encoder(src, src_mask) 
-            
-        # For decoder input
-        memory_ = memory[0].repeat(tgt.size(0), 1, 1)
-        
-        # Positional encode
-        # tgt = self.pos_dec(tgt)
-        # Decoder
+        src = src.repeat(tgt.size(0), 1, 1)
+        src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(device)
         tgt_mask = nn.Transformer.generate_square_subsequent_mask(tgt.size(1)).to(device)
-        output = self.transformer_decoder(tgt=tgt, tgt_mask=tgt_mask, memory=memory_) 
+        output = self.transformer(src, tgt, src_mask=src_mask, tgt_mask=tgt_mask)
         
         # Linear
         ...
         
-        return memory, output
+        return output
+
+
 
 # Resnet
 

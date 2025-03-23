@@ -81,33 +81,41 @@ class BaseTrainer:
     
         self.short = short
     
-    def _init_training_control(self):
-        self.start_epoch = 0
-        self.not_improve_cnt = 0
-        if self.val_type == "loss":
-            self.best_val_result = float("inf")
-        else:
-            self.best_val_result = float("-inf")
+    @abstractmethod
+    def _build_model(self):
+        raise NotImplementedError
     
-    def _accelerate(self):    
-        # Prepare with accelerator
-        (
-            self.model,
-            self.optimizer,
-            self.data.trainloader,
-            self.data.validloader,
-            self.scheduler,
-        ) = self.accelerator.prepare(
-            self.model, self.optimizer, self.data.trainloader, self.data.validloader, self.scheduler
-        )
-        
+    @abstractmethod
+    def _init_data(self):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def _data_obj(self):
+        raise NotImplementedError        
+    
     @abstractmethod
     def _update_data(self):
         raise NotImplementedError
     
-    @abstractmethod
-    def _build_model(self):
-        raise NotImplementedError
+    
+    def train(self):
+        
+        print(f"Validatin method: {self.val_type}")
+        
+        self._resume_checkpoint()
+        
+        for stock in self.stock_list:
+            
+            if stock in self.stock_trained:
+                print(f"Stock {stock} already trained")
+                continue
+            
+            self.stock = stock
+            self._init_training_control()
+            self._update_data()
+            self._accelerate()
+            self._train()
+            self.stock_trained.append(self.stock)
     
     def _train(self):
         
@@ -136,26 +144,7 @@ class BaseTrainer:
                     break
                     
             print(f"Epoch {epoch} | training loss: {loss_train_mean:.3f}")
-    
-    def train(self):
         
-        print(f"Validatin method: {self.val_type}")
-        
-        self._resume_checkpoint()
-        
-        for stock in self.stock_list:
-            
-            if stock in self.stock_trained:
-                print(f"Stock {stock} already trained")
-                continue
-            
-            self.stock = stock
-            self._init_training_control()
-            self._update_data()
-            self._accelerate()
-            self._train()
-            self.stock_trained.append(self.stock)
-    
     def _save_checkpoint(self, epoch, save_best=False):
         """
         Saving checkpoints at: 'epoch-{}-{}.pth'.format(epoch, self.stock)
@@ -207,8 +196,11 @@ class BaseTrainer:
         assert checkpoint['arch'] == self.config['name'] , \
             "Architecture configuration given in config file is different from that of checkpoint. " \
             "This may yield an exception while state_dict is being loaded."
-        self.model.load_state_dict(checkpoint['state_dict'])
-
+        try:
+            self.model.load_state_dict(checkpoint['state_dict'])
+        except:
+            print("Model state_dict not loaded")
+            return None
         
         # load optimizer state from checkpoint only when optimizer type is not changed.
         assert checkpoint['config']['optimizer']['type'] == self.config['optimizer']['type'], \
@@ -265,7 +257,27 @@ class BaseTrainer:
             else:
                 print(f"Directory already exists: {file}")
     
-
+    def _init_training_control(self):
+        self.start_epoch = 0
+        self.not_improve_cnt = 0
+        if self.val_type == "loss":
+            self.best_val_result = float("inf")
+        else:
+            self.best_val_result = float("-inf")
+    
+    def _accelerate(self):    
+        # Prepare with accelerator
+        (
+            self.model,
+            self.optimizer,
+            self.data.trainloader,
+            self.data.validloader,
+            self.scheduler,
+        ) = self.accelerator.prepare(
+            self.model, self.optimizer, self.data.trainloader, self.data.validloader, self.scheduler
+        )
+    
+    
     @abstractmethod
     def _model_train(self):
         raise NotImplementedError

@@ -32,23 +32,24 @@ class TransformerTrainer(BaseTrainer):
         ) -> None:       
         super().__init__(stock_list, config, dirs)
         
+        self.config = config
+        
         # Data  
         self.memory = ...
         self.src_len = ...  
-        self._init_data()
-        
+        self._init_data()        
         
     # Model
     def _build_model(self):
         return Transformer(
-            d_model=6, 
-            dropout=0.5, 
-            d_hid=128, 
-            nhead=2, 
-            nlayers_e=64, 
-            nlayers_d=16, 
-            ntoken=self.config["ntoken"], 
-        ).to(device)
+            d_model=self.config["d_model"],
+            dropout=self.config["dropout"],
+            d_hid=self.config["d_hid"],
+            nhead=self.config["nhead"],
+            nlayers_e=self.config["nlayers_e"],
+            nlayers_d=self.config["nlayers_d"],
+            ntoken=self.config["ntoken"],
+            ).to(device) 
     
     # Data
     def _data_obj(self):
@@ -83,7 +84,7 @@ class TransformerTrainer(BaseTrainer):
         for x, y in tqdm(self.data.trainloader): 
             
             self.optimizer.zero_grad()       
-            self.memory, outputs = self.model(src=self.data.src, tgt=x)    
+            outputs = self.model(src=self.data.src, tgt=x)    
             loss = self.criterion(outputs, y)
             self.accelerator.backward(loss)
             self.optimizer.step()
@@ -96,7 +97,7 @@ class TransformerTrainer(BaseTrainer):
         with torch.no_grad():
             self.model.eval()
             for x_val, y_val in self.data.validloader:
-                _, outputs_val = self.model(memory=self.memory, tgt=x_val)
+                outputs_val = self.model(src=self.data.src, tgt=x_val)
                 loss = self.criterion(outputs_val, y_val)
                 loss_valid_mean += loss.item()
         
