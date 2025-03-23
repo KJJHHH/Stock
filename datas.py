@@ -27,8 +27,8 @@ class TransformerData(BaseData):
         self.data_origin = self.data.copy()
         self._create_var_target()
         self._clean()
+        self._normalize()
         self.prepare_data()
-        # self._normalize()
         
     def __get_src(self, x_train: torch.tensor, src_len: int = 0):   
         """get src data for transformer encoder
@@ -79,6 +79,7 @@ class TransformerData(BaseData):
             torch.tensor(X_train, dtype = torch.float32), torch.tensor(y_train, dtype = torch.float32), \
             torch.tensor(X_test, dtype = torch.float32), torch.tensor(y_test, dtype = torch.float32), \
             torch.tensor(X_valid, dtype = torch.float32), torch.tensor(y_valid, dtype = torch.float32)
+        
         
         self.src_len = X_train.shape[0]        
         self.__get_src(X_train, self.src_len)

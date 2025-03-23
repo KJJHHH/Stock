@@ -76,7 +76,7 @@ class BaseData():
         """
         scaler = StandardScaler()
         columns = ['do', 'dh', 'dl', 'dc', 'dv', 'dac']
-        scaler.fit(self.data[columns][:self.train_len])
+        scaler.fit(self.data[self.data.index < self.valid_start][columns])
         self.data[columns] = scaler.transform(self.data[columns])
 
     def getLoaders(self, datas, batch_size):
