@@ -60,10 +60,11 @@ class TransformerData(BaseData):
         
         for i in range(len(self.data)-self.window): 
             # y shift 1 from x
-            x_window = self.data.iloc[i:i+self.window][['do', 'dh', 'dl', 'dv', 'dac', 'doc']].values
-            y_window = self.data.iloc[i+1:i+self.window+1][['do', 'dh', 'dl', 'dv', 'dac', 'doc']].values
+            x_window = self.data.iloc[i:i+self.window][['do', 'dh', 'dl', 'dv', 'dac', 'return']].values
+            y_window = self.data.iloc[i+1:i+self.window+1][['do', 'dh', 'dl', 'dv', 'dac', 'return']].values
             date = self.data.index[i+self.window]
             
+            # Split
             if date < self.valid_start:
                 append_data((x_window, y_window, date), (X_train, y_train, train_dates))
             elif date < self.test_start:
@@ -79,7 +80,6 @@ class TransformerData(BaseData):
             torch.tensor(X_train, dtype = torch.float32), torch.tensor(y_train, dtype = torch.float32), \
             torch.tensor(X_test, dtype = torch.float32), torch.tensor(y_test, dtype = torch.float32), \
             torch.tensor(X_valid, dtype = torch.float32), torch.tensor(y_valid, dtype = torch.float32)
-        
         
         self.src_len = X_train.shape[0]        
         self.__get_src(X_train, self.src_len)

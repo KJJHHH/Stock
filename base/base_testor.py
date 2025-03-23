@@ -91,22 +91,30 @@ class Backtestor():
         plt.show()
     
     @staticmethod
-    def test_model(_test_method, model, data, short, verbose=False):
+    def test_model(_test_method, model, data, short, verbose=True):
         
         result, truth = _test_method(model, data)
-        truth[result >= 0] = 1 + truth[result >= 0]
         
+        # Hold return
+        asset_hold_hist = 1 + truth
+        asset_hold_hist = torch.cumprod(asset_hold_hist, dim=0).cpu().numpy()
+        
+        # Model return
+        truth = torch.zeros_like(result)
+        truth[result >= 0] = 1 + truth[result >= 0]
         if short:
             truth[result < 0] = 1 - truth[result < 0]
         else:
             truth[result < 0] = 1
-            
         asset_hist = torch.cumprod(truth, dim=0).cpu().numpy()
+        
         
         if verbose:
             print(result)
+            plt.plot(asset_hist)
+            plt.show()
             
-        return asset_hist
+        return asset_hist, asset_hold_hist
     
     @abstractmethod
     def _test_method(model, data):

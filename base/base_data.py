@@ -57,9 +57,9 @@ class BaseData():
         self.data['dc'] = self.data['Close'].pct_change() * 100
         self.data['dac'] = self.data['Adj Close'].pct_change() * 100
         self.data['dv'] = self.data['Volume'].pct_change() * 100
-        self.data['doc'] = ((self.data['Adj Close'] - self.data['Open'])/self.data['Open'])
+        self.data['return'] = ((self.data['Adj Close'] - self.data['Adj Close'].shift(1))/self.data['Adj Close'])
         
-        columns = ['do', 'dh', 'dl', 'dc', 'dv', 'dac', 'doc']
+        columns = ['do', 'dh', 'dl', 'dc', 'dv', 'dac', 'return']
             
         self.data = self.data[columns] 
         
@@ -88,8 +88,8 @@ class BaseData():
         
         X_train, y_train, X_test, y_test, X_valid, y_valid = datas
         self.trainloader = loader(X_train, y_train, batch_size)
-        self.validloader = loader(X_valid, y_valid, len(X_valid))
-        self.testloader = loader(X_test, y_test, len(X_test))
+        self.validloader = loader(X_valid, y_valid, len(y_valid))
+        self.testloader = loader(X_test, y_test, len(y_test))
         
     @abstractmethod
     def prepare_data(self, percentage_test: float, percentage_valid: float):

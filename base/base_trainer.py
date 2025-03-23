@@ -16,6 +16,10 @@ from abc import abstractmethod
 from numpy import inf
 # from logger import TensorboardWriter
 
+"""
+- Delete val_with_asset, loss function, move to _train
+"""
+
 # Save: 'epoch-{}-{}.pt'.format(epoch, self.stock)
 class BaseTrainer:
     def __init__(self, 
@@ -143,6 +147,7 @@ class BaseTrainer:
                 if stop:
                     break
                     
+            torch.cuda.empty_cache()
             print(f"Epoch {epoch} | training loss: {loss_train_mean:.3f}")
         
     def _save_checkpoint(self, epoch, save_best=False):
@@ -213,13 +218,13 @@ class BaseTrainer:
         self.not_improve_cnt = checkpoint['not_improve_cnt']
         self.best_val_result = checkpoint['best_val_result']  
         self.stock_trained = checkpoint['stock_trained']
-        
+    
     def _val_with_asset(self, epoch):
         # Validate with return
-        val_return = self._model_backtest()
+        val_return, val_hold_return = self._model_backtest()
 
         if val_return > self.best_val_result:
-            print(f'New best model found with return {val_return}')
+            print(f'New best model found with return {val_return} | hold return {val_hold_return}')
             self.not_improve_cnt = 0
             self.best_val_result = val_return
             self._save_checkpoint(epoch, save_best=True)
