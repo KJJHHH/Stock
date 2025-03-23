@@ -15,19 +15,18 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class BaseData():
     def __init__(self,
         stock: str, 
-        window: int = 5,
-        batch_size: int = 64, 
+        config: dict,
         ):
         
         self.stock = stock
-        self.start_date = '2016-01-02'
-        self.end_date = '2024-12-31'
-        self.window = window    
-        self.batch_size = batch_size
+        self.start_date = config['train_start']
+        self.end_date = config["end_date"]
+        self.window = config["ntoken"] 
+        self.batch_size = config["batch_size"]
         
-        self.train_start = pd.Timestamp('2016-01-02')
-        self.valid_start = pd.Timestamp('2023-12-31')
-        self.test_start = pd.Timestamp('2024-06-01')
+        self.train_start = pd.Timestamp(config["train_start"])
+        self.valid_start = pd.Timestamp(config["valid_start"])
+        self.test_start = pd.Timestamp(config["test_start"])
         self.train_dates = ...
         self.valid_dates = ...
         self.test_dates = ...

@@ -1,4 +1,5 @@
 import torch
+import json
 
 from datas import *
 from models import *
@@ -38,35 +39,8 @@ if __name__ == "__main__":
     # MODEL type
     if MODEL == "Transformer": 
         
-        config = {
-            # data
-            "ntoken": 5,
-            "start_date": "2016-01-01",
-            "end_date": "2024-12-28",
-            
-            # model
-            "name": MODEL,
-            "epochs": 2,
-            # loss or  asset
-            "val_type": "asset",
-            # optimizer, scheduler
-            "optimizer": {
-                "type": "Adam",
-                "args":{
-                    "lr": 0.001,
-                    "weight_decay": 0.00001,
-                    "amsgrad": True
-                }
-            },
-            "lr_scheduler": {
-                "type": "StepLR",
-                "args": {
-                    "step_size": 1,
-                    "gamma": 0.5
-                }
-            },
-        }
-        
+        with open("configs/transformer.json", "r") as f:
+            config = json.load(f)
         # Target stock data
         trainer = TransformerTrainer
         testor = TransformerBacktestor

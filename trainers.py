@@ -30,12 +30,13 @@ class TransformerTrainer(BaseTrainer):
         config,  
         dirs,
         ) -> None:       
+        super().__init__(stock_list, config, dirs)
         
         # Data  
         self.memory = ...
-        self.src_len = ...    
+        self.src_len = ...  
+        self._init_data()
         
-        super().__init__(stock_list, config, dirs)
         
     # Model
     def _build_model(self):
@@ -50,32 +51,30 @@ class TransformerTrainer(BaseTrainer):
         ).to(device)
     
     # Data
+    def _data_obj(self):
+        return TransformerData(
+            stock=self.stock_target,
+            config=self.config,
+            )
+
+    def _init_data(self):
+        self.data = self._data_obj()
+        self.src_len = self.data.src.shape[1]
+        
     def _update_data(self):
         """ Only udpate src 
         """
-        if self.stock == self.stock_target:
-            self.data = TransformerData(
-                stock=self.stock,
-                window=self.config["ntoken"],
-                batch_size=64,
-                )
-            self.src_len = self.data.src.shape[1]
-        else:
-            self.data.src = TransformerData(
-                stock=self.stock,
-                window=self.config["ntoken"],
-                batch_size=64,
-                ).src
-            if self.data.src.shape[1] > self.src_len:
-                self.data.src = self.data.src[:, :self.src_len, :]
-            if self.data.src.shape[1] < self.src_len:
-                self.data.src = torch.cat(
-                    (
-                        self.data.src, 
-                        torch.zeros(
-                            (self.data.src.shape[0], self.src_len - self.data.src.shape[1], self.data.src.shape[2]),
-                            device=self.data.src.device)
-                    ), dim=1)
+        self.data.src = self._data_obj().src
+        if self.data.src.shape[1] > self.src_len:
+            self.data.src = self.data.src[:, :self.src_len, :]
+        if self.data.src.shape[1] < self.src_len:
+            self.data.src = torch.cat(
+                (
+                    self.data.src, 
+                    torch.zeros(
+                        (self.data.src.shape[0], self.src_len - self.data.src.shape[1], self.data.src.shape[2]),
+                        device=self.data.src.device)
+                ), dim=1)
     
     # Transformer function
     def _model_train(self):

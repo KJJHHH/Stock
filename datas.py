@@ -11,12 +11,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class TransformerData(BaseData):
     def __init__(self,
         stock: str, 
-        window: int = 5,
-        
-        batch_size: int = 64, 
+        config: dict,
         src_len = None
         ) -> None:
-        super().__init__(stock, window, batch_size)        
+        super().__init__(stock, config)        
         """Shape
         - loaders: (batch size, seq len, features)
         - src: (1, total seq len, features)

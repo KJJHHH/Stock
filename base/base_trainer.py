@@ -37,11 +37,8 @@ class BaseTrainer:
         self.device = device
         self._check_dir()
         
-        
         # Config
         self.config = config
-        self.start_date = config["start_date"]
-        self.end_date = config["end_date"]
         self.epochs = config["epochs"]
         self.val_type = config["val_type"] # by loss or by asset
         self.lr = config["optimizer"]["args"]["lr"]
