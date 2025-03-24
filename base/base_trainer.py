@@ -118,7 +118,6 @@ class BaseTrainer:
             self._update_data()
             self._accelerate()
             self._train_stock()
-            self.stock_trained.append(self.stock)
     
     def _train_stock(self):
         
@@ -135,7 +134,7 @@ class BaseTrainer:
             # Save ckpt
             if epoch % 10 == 0:
                 self._save_checkpoint(epoch)
-            if epoch == self.epochs:
+            if epoch == self.epochs - 1:
                 self.stock_trained.append(self.stock)
                 self._save_checkpoint(epoch)
             
@@ -232,7 +231,6 @@ class BaseTrainer:
             "This may yield an exception while state_dict is being loaded."
         try:
             self.model.load_state_dict(checkpoint['state_dict'])
-            print("Model state_dict loaded")
         except:
             print("Model state_dict not loaded")
             return None

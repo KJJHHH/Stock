@@ -59,20 +59,20 @@ class TransformerTrainer(BaseTrainer):
             ).to(device) 
     
     # Data
-    def _data_obj(self):
+    def _data_obj(self, stock):
         return TransformerData(
-            stock=self.stock_target,
+            stock=stock,
             config=self.config,
             )
     
     def _init_data(self):
-        data = self._data_obj()
+        data = self._data_obj(self.stock_target)
         self.src_len = data.src.shape[1]  
         return data
         
     def _update_data(self):
         # data object
-        self.data = self._data_obj()
+        self.data = self._data_obj(self.stock)
         
         # padding data src
         if self.data.src.shape[1] > self.src_len:

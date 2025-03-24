@@ -6,7 +6,7 @@
     "test_start": "2024-06-01",
     "end_date": "2024-12-31",
     
-    "epochs": 1,
+    "epochs": 5,
     "batch_size": 8,
     "val_type": "asset",
     "optimizer": {

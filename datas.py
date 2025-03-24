@@ -19,6 +19,8 @@ class TransformerData(BaseData):
         - loaders: (batch size, seq len, features)
         - src: (1, total seq len, features)
         """
+        self.stock = stock
+        
         self.src = ...
         self.src_len = src_len
         
