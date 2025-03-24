@@ -43,6 +43,7 @@ if __name__ == "__main__":
         
         with open("configs/Transformer.json", "r") as f:
             config = json.load(f)
+            
         # Target stock data
         trainer = TransformerTrainer
         testor = TransformerBacktestor

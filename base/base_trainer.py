@@ -61,14 +61,14 @@ class BaseTrainer:
         self._init_training_control()
         
         # Data  
-        self.data = None
+        self.data = self._init_data()  
         
         # Accelerator setup
         self.accelerator = Accelerator(mixed_precision='fp16')
         self.device = self.accelerator.device
         
         # Model, loss, optimizer, scheduler
-        self.model = self._build_model()
+        self.model = self._init_model()
         self.model_best = self.model
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(
@@ -85,25 +85,24 @@ class BaseTrainer:
     
         self.short = short
     
+    # Model
     @abstractmethod
-    def _build_model(self):
+    def _init_model(self):
         raise NotImplementedError
     
-    @abstractmethod
-    def _init_data(self):
-        raise NotImplementedError
-    
+    # Data
     @abstractmethod
     def _data_obj(self):
-        raise NotImplementedError        
-    
+        raise NotImplementedError  
+    @abstractmethod
+    def _init_data(self):
+        raise NotImplementedError    
     @abstractmethod
     def _update_data(self):
         raise NotImplementedError
     
-    
+    # Train
     def train(self):
-        
         print(f"Validatin method: {self.val_type}")
         
         self._resume_checkpoint()
@@ -118,10 +117,10 @@ class BaseTrainer:
             self._init_training_control()
             self._update_data()
             self._accelerate()
-            self._train()
+            self._train_stock()
             self.stock_trained.append(self.stock)
     
-    def _train(self):
+    def _train_stock(self):
         
         print(f"Start training stock {self.stock}")
         
@@ -136,19 +135,49 @@ class BaseTrainer:
             # Save ckpt
             if epoch % 10 == 0:
                 self._save_checkpoint(epoch)
+            if epoch == self.epochs:
+                self.stock_trained.append(self.stock)
+                self._save_checkpoint(epoch)
             
             # Validating with return
-            if self.val_type == "asset":
-                stop = self._val_with_asset(epoch)
-                if stop:
-                    break
-            else:
-                stop = self._val_with_loss(epoch)
-                if stop:
-                    break
+            stop = self._validate(epoch)
+            if stop:
+                break
                     
             torch.cuda.empty_cache()
             print(f"Epoch {epoch} | training loss: {loss_train_mean:.3f}")
+        
+    def _validate(self, epoch):
+        if self.val_type == "asset":
+            val_return, val_hold_return = self._model_backtest()
+
+            if val_return > self.best_val_result:
+                print(f'New best model found with return {val_return} | hold return {val_hold_return}')
+                self.not_improve_cnt = 0
+                self.best_val_result = val_return
+                self._save_checkpoint(epoch, save_best=True)
+            else:
+                self.not_improve_cnt += 1
+                if self.not_improve_cnt >= 100:
+                    print(f'Early stopping at epoch {epoch}')
+                    return True
+            return False
+        
+        else:
+            loss_valid_mean = self._model_validate()
+
+            if loss_valid_mean < self.best_val_result:
+                print(f'New best model found in epoch {epoch} with val loss: {loss_valid_mean}')
+                self.not_improve_cnt = 0
+                self.best_val_result = loss_valid_mean
+                self._save_checkpoint(epoch, save_best=True)
+            else:
+                self.not_improve_cnt += 1
+                if self.not_improve_cnt >= 100:
+                    print(f'Early stopping at epoch {epoch}')
+                    return True
+            
+            return False
         
     def _save_checkpoint(self, epoch, save_best=False):
         """
@@ -195,7 +224,7 @@ class BaseTrainer:
         
         # Load checkpoint
         print("Loading checkpoint: {}".format(resume_path))
-        checkpoint = torch.load(resume_path)
+        checkpoint = torch.load(resume_path, weights_only=False)
 
         # load architecture params from checkpoint.
         assert checkpoint['arch'] == self.config['name'] , \
@@ -203,6 +232,7 @@ class BaseTrainer:
             "This may yield an exception while state_dict is being loaded."
         try:
             self.model.load_state_dict(checkpoint['state_dict'])
+            print("Model state_dict loaded")
         except:
             print("Model state_dict not loaded")
             return None
@@ -219,40 +249,18 @@ class BaseTrainer:
         self.best_val_result = checkpoint['best_val_result']  
         self.stock_trained = checkpoint['stock_trained']
     
-    def _val_with_asset(self, epoch):
-        # Validate with return
-        val_return, val_hold_return = self._model_backtest()
-
-        if val_return > self.best_val_result:
-            print(f'New best model found with return {val_return} | hold return {val_hold_return}')
-            self.not_improve_cnt = 0
-            self.best_val_result = val_return
-            self._save_checkpoint(epoch, save_best=True)
-        else:
-            self.not_improve_cnt += 1
-            if self.not_improve_cnt >= 100:
-                print(f'Early stopping at epoch {epoch}')
-                return True
-        
-        return False
+    # Train detailed function
+    @abstractmethod
+    def _model_train(self):
+        raise NotImplementedError
+    @abstractmethod
+    def _model_validate(self):
+        raise NotImplementedError
+    @abstractmethod
+    def _model_backtest(self):
+        raise NotImplementedError
     
-    def _val_with_loss(self, epoch):
-        # Validate with loss
-        loss_valid_mean = self._model_validate()
-
-        if loss_valid_mean < self.best_val_result:
-            print(f'New best model found in epoch {epoch} with val loss: {loss_valid_mean}')
-            self.not_improve_cnt = 0
-            self.best_val_result = loss_valid_mean
-            self._save_checkpoint(epoch, save_best=True)
-        else:
-            self.not_improve_cnt += 1
-            if self.not_improve_cnt >= 100:
-                print(f'Early stopping at epoch {epoch}')
-                return True
-        
-        return False
-    
+    # Utils
     def _check_dir(self):
         file_lists = [self.ckpt_dir, self.performance_dir]
         for file in file_lists:
@@ -282,13 +290,3 @@ class BaseTrainer:
             self.model, self.optimizer, self.data.trainloader, self.data.validloader, self.scheduler
         )
     
-    
-    @abstractmethod
-    def _model_train(self):
-        raise NotImplementedError
-    @abstractmethod
-    def _model_validate(self):
-        raise NotImplementedError
-    @abstractmethod
-    def _model_backtest(self):
-        raise NotImplementedError

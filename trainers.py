@@ -23,6 +23,11 @@ from models import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+"""
+Issues
+- udpate data fail
+- save checkpoint failed for last stock
+"""
 class TransformerTrainer(BaseTrainer):
     
     def __init__(self, 
@@ -30,17 +35,19 @@ class TransformerTrainer(BaseTrainer):
         config,  
         dirs,
         ) -> None:       
-        super().__init__(stock_list, config, dirs)
         
+        # Config
         self.config = config
         
-        # Data  
+        # Data for transformer
         self.memory = ...
         self.src_len = ...  
-        self._init_data()        
         
+        # Init base trainer
+        super().__init__(stock_list, config, dirs)
+    
     # Model
-    def _build_model(self):
+    def _init_model(self):
         return Transformer(
             d_model=self.config["d_model"],
             dropout=self.config["dropout"],
@@ -57,15 +64,17 @@ class TransformerTrainer(BaseTrainer):
             stock=self.stock_target,
             config=self.config,
             )
-
+    
     def _init_data(self):
-        self.data = self._data_obj()
-        self.src_len = self.data.src.shape[1]
+        data = self._data_obj()
+        self.src_len = data.src.shape[1]  
+        return data
         
     def _update_data(self):
-        """ Only udpate src 
-        """
-        self.data.src = self._data_obj().src
+        # data object
+        self.data = self._data_obj()
+        
+        # padding data src
         if self.data.src.shape[1] > self.src_len:
             self.data.src = self.data.src[:, :self.src_len, :]
         if self.data.src.shape[1] < self.src_len:
@@ -77,7 +86,7 @@ class TransformerTrainer(BaseTrainer):
                         device=self.data.src.device)
                 ), dim=1)
     
-    # Transformer function
+    # Train detailed function
     def _model_train(self):
         loss_train_mean = 0
         self.model.train()
@@ -112,6 +121,8 @@ class TransformerTrainer(BaseTrainer):
             verbose=False)
         return asset_hist[-1], asset_hold_hist[-1]
     
+    
+    # ...
     def _update_(self, src):
         self.data.src = ...
         """
