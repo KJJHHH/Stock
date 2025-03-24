@@ -21,8 +21,7 @@ class TransformerBacktestor(Backtestor):
                 x_test, y_test, src = x_test.to(device), y_test.to(device), src.to(device)
                 result = model(src=src, tgt=x_test)
                 result = result[:, -1, -1].detach()
-                truth = y_test[:, -1, -1].detach()
-            
+                truth = y_test[:, -1, -1].detach()            
         
             return result, truth
 

@@ -41,7 +41,7 @@ class TransformerData(BaseData):
         
         self.src = x_train[:src_len][:, -1, :].unsqueeze(0).to(device)
        
-    def prepare_data(self): 
+    def prepare_data(self, verbose=False): 
         """Transform to training form of data and get the date of each sample of data
         """
         
@@ -85,14 +85,15 @@ class TransformerData(BaseData):
         self.__get_src(X_train, self.src_len)
         self.getLoaders((X_train, y_train, X_test, y_test, X_valid, y_valid), self.batch_size)
         
-        print(f"""Data Shape: 
-        x_train: {X_train.shape}, 
-        x_valid: {X_valid.shape}, 
-        x_test: {X_test.shape}, 
-        y_train: {y_train.shape}, 
-        y_valid: {y_valid.shape}, 
-        y_test: {y_test.shape},
-        src: {self.src.shape}""")
+        if verbose:
+            print(f"""Data Shape: 
+            x_train: {X_train.shape}, 
+            x_valid: {X_valid.shape}, 
+            x_test: {X_test.shape}, 
+            y_train: {y_train.shape}, 
+            y_valid: {y_valid.shape}, 
+            y_test: {y_test.shape},
+            src: {self.src.shape}""")
         
 class CVBasedData(BaseData):
     def __init__(self, 

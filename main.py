@@ -39,7 +39,9 @@ if __name__ == "__main__":
     # MODEL type
     if MODEL == "Transformer": 
         
-        with open("configs/transformer.json", "r") as f:
+        assert os.path.exists("configs/Transformer.json"), "Transformer.json not found"
+        
+        with open("configs/Transformer.json", "r") as f:
             config = json.load(f)
         # Target stock data
         trainer = TransformerTrainer
