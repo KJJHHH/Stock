@@ -14,6 +14,7 @@ pip install -r requirements.txt
 - arg[0]: to train / test (backtest)
 - arg[1]: model name
 - arg[2]: stock list
+- training arguements in `configs/`
 
 #### Train
 ```bash
@@ -21,6 +22,7 @@ cd Stock
 python main.py train --model Transformer --stock 2330.TW
 # train 2330.TW with multiple stock
 python main.py train --model Transformer --stock 2330.TW 2454.TW
+# python main.py train --model Transformer --stock 2330.TW 2454.TW 3034.TW 2379.TW  
 ```
 #### Backtest
 ```bash

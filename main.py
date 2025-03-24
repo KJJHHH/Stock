@@ -100,7 +100,8 @@ if __name__ == "__main__":
             config=config,  
             dirs=dirs
         )
-        trainer.train()
+        
+        trainer.training()
         
     if task == "test":
         testor = testor(stock_list, model=model, data=data_class, dirs=dirs)

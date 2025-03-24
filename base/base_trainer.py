@@ -84,6 +84,8 @@ class BaseTrainer:
         )        
     
         self.short = short
+        
+        print(f"Validatin method: {self.val_type}")
     
     # Model
     @abstractmethod
@@ -102,8 +104,16 @@ class BaseTrainer:
         raise NotImplementedError
     
     # Train
-    def train(self):
-        print(f"Validatin method: {self.val_type}")
+    def training(self):
+        """Training pipeline
+        """
+        self.pretrain()
+        self.train()
+    
+    def pretrain(self):
+        """Training multiple stock in stock list
+        """
+        print("TRAINING multiple stock ...")
         
         self._resume_checkpoint()
         
@@ -111,17 +121,25 @@ class BaseTrainer:
             
             if stock in self.stock_trained:
                 print(f"Stock {stock} already trained")
-                continue
-            
-            self.stock = stock
-            self._init_training_control()
-            self._update_data()
-            self._accelerate()
-            self._train_stock()
-    
-    def _train_stock(self):
+                continue                
+            self._train_stock(stock)
         
-        print(f"Start training stock {self.stock}")
+    def train(self):
+        """Train the target stock after pretrain
+        """
+        print("TRAINING target stock ...")
+        stock = self.stock_target
+        self._train_stock(stock)
+        
+    
+    def _train_stock(self, stock):
+        
+        print(f"Start training stock {stock}")
+        self.stock = stock
+        self.model = self.model_best
+        self._init_training_control()
+        self._update_data()
+        self._accelerate()
         
         for epoch in range(self.start_epoch, self.epochs):
             # Train
@@ -154,6 +172,7 @@ class BaseTrainer:
                 print(f'New best model found with return {val_return} | hold return {val_hold_return}')
                 self.not_improve_cnt = 0
                 self.best_val_result = val_return
+                self.model_best = self.model
                 self._save_checkpoint(epoch, save_best=True)
             else:
                 self.not_improve_cnt += 1
@@ -169,6 +188,7 @@ class BaseTrainer:
                 print(f'New best model found in epoch {epoch} with val loss: {loss_valid_mean}')
                 self.not_improve_cnt = 0
                 self.best_val_result = loss_valid_mean
+                self.model_best = self.model
                 self._save_checkpoint(epoch, save_best=True)
             else:
                 self.not_improve_cnt += 1

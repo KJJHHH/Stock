@@ -8,7 +8,7 @@
     
     "epochs": 5,
     "batch_size": 8,
-    "val_type": "asset",
+    "val_type": "loss",
     "optimizer": {
         "type": "Adam",
         "args":{
