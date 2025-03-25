@@ -102,9 +102,9 @@ class Backtestor():
         if train_method is None:
             label = f"BuyHold"
         if train_method == "multiple":
-            label = f"Model multiple"
+            label = f"Model multiple "
         if train_method == "single":
-            label = f"Model single"
+            label = f"Model single epoch "
         
         print("Predicting " + label + "...")
         if ckpts != []:
@@ -112,9 +112,6 @@ class Backtestor():
                 if self.__load_model(epoch):        
                     asset_hist = self.backtesting(self._test_method, self.model, (self.loader, self.data.src), verbose=False)
                     plt.plot(pd.DataFrame(asset_hist).set_index(self.dates), label=label+str(epoch))   # Model performance
-                    
-                    if train_method == "multiple":
-                        print(asset_hist)
                     
                 torch.cuda.empty_cache()
             
