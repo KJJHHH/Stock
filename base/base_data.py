@@ -57,7 +57,7 @@ class BaseData():
         self.data['dc'] = self.data['Close'].pct_change() * 100
         self.data['dac'] = self.data['Adj Close'].pct_change() * 100
         self.data['dv'] = self.data['Volume'].pct_change() * 100
-        self.data['return'] = ((self.data['Adj Close'] - self.data['Adj Close'].shift(1))/self.data['Adj Close'])
+        self.data['return'] = ((self.data['Adj Close'] - self.data['Adj Close'].shift(1))/self.data['Adj Close'].shift(1))
         
         columns = ['do', 'dh', 'dl', 'dc', 'dv', 'dac', 'return']
             

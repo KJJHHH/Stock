@@ -19,9 +19,13 @@ pip install -r requirements.txt
 #### Train
 ```bash
 cd Stock
+
+# Basic train
 python main.py train --model Transformer --stock_target 2330.TW
+
 # train 2330.TW with multiple stock
 python main.py train --model Transformer --stock_target 2330.TW --stock_pool 2454.TW
+
 # train 2884 with top 9 bank holding company
 python main.py train --model Transformer --stock_target 2884.TW --stock_pool 2881.TW 2882.TW 2891.TW 2885.TW 2883.TW 2890.TW 2887.TW 2888.TW
 ```
