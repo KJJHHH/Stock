@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", help="Select model: [Transformer, Decoder only]")  
     parser.add_argument("-st", "--stock_target", help="Enter stock id, eg. 2884.TW") # target stock
     parser.add_argument("-sp", "--stock_pool", nargs="*", default=[], help="Enter stock id, eg. 2881.TW")  
+    parser.add_argument("-e", "--epochs", default=None, help="Enter start date, eg. 2016-01-01")
 
     # Parse arguments
     args = parser.parse_args()
@@ -27,6 +28,8 @@ if __name__ == "__main__":
     target_stock = args.stock_target
     assert target_stock not in stock_list, "TODO: remove tstock from stock-pool"
     stock_list.insert(0, target_stock)
+    
+    epoch = args.epochs
     MODEL = args.model
     
     ckpt_dir = "results/" + MODEL + "-temp/"
@@ -47,6 +50,9 @@ if __name__ == "__main__":
         
         with open("configs/Transformer.json", "r") as f:
             config = json.load(f)
+            
+        if epoch is not None:
+            config["epochs"] = int(epoch)
             
         # Target stock data
         trainer = TransformerTrainer
@@ -96,7 +102,7 @@ if __name__ == "__main__":
         trainer = ResnetTrainer
     
     # Tasks
-    dirs = {"ckpt_dir": ckpt_dir, "performance_dir": performance_dir}
+    dirs = {"ckpt_dir": ckpt_dir, "performance_dir": performance_dir, "file_prefix": "-".join(stock_list)}
     
     if task == "train":
         trainer = trainer(
@@ -108,5 +114,9 @@ if __name__ == "__main__":
         trainer.training()
         
     if task == "test":
-        testor = testor(stock_list, model=model, data=data_class, dirs=dirs)
-        testor.plot_result(ckpts=[0, 20, 40, 60, 190], short=True)
+        testor = testor(
+            stock_list, 
+            config=config,
+            dirs=dirs
+            )
+        testor.plot()

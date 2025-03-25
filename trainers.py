@@ -113,13 +113,13 @@ class TransformerTrainer(BaseTrainer):
         return loss_valid_mean / len(self.data.validloader)
     
     def _model_backtest(self):
-        asset_hist, asset_hold_hist = TransformerBacktestor.test_model(
+        asset_hist = TransformerBacktestor.backtesting(
             TransformerBacktestor._test_method, 
             self.model, 
             (self.data.validloader, self.data.src), 
             short=True, 
             verbose=False)
-        return asset_hist[-1], asset_hold_hist[-1]
+        return asset_hist[-1]
     
     
     # ...

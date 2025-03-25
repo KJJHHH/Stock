@@ -28,7 +28,7 @@ python main.py train --model Transformer --stock_target 2884.TW --stock_pool 288
 #### Backtest
 ```bash
 cd Stock
-python main.py test --model Transformer --stock 2330.TW  
+python main.py test --model Transformer --stock_target 2884.TW --stock_pool 2881.TW 2882.TW 2891.TW 2885.TW 2883.TW 2890.TW 2887.TW 2888.TW
 ```
 
 ## Result
@@ -37,6 +37,8 @@ python main.py test --model Transformer --stock 2330.TW
 ![2882 performance](https://github.com/KJJHHH/Stock/blob/main/results/Transformer-result/2882.TW.png)
 - Stock 2884
 ![2884 performance](https://github.com/KJJHHH/Stock/blob/main/results/Transformer-result/2884.TW.png)
+- Stock 2884 training with top 9 bank holding company
+![]()
 
 ## Pending updates
 - Decoder only model

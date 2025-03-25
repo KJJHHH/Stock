@@ -35,7 +35,7 @@ class BaseTrainer:
         self.stock_target = stock_list[0]
         self.stock_list = stock_list
         self.stock_trained = []
-        self.file_prefix = "-".join(stock_list)
+        self.file_prefix = dirs["file_prefix"]
         self.ckpt_dir = dirs["ckpt_dir"]
         self.performance_dir = dirs["performance_dir"]
         self.device = device
@@ -150,26 +150,26 @@ class BaseTrainer:
                 self.scheduler.step()
                 
             # Save ckpt
-            if epoch % 10 == 0:
+            if epoch % 1 == 0:
                 self._save_checkpoint(epoch)
             if epoch == self.epochs - 1:
                 self.stock_trained.append(self.stock)
                 self._save_checkpoint(epoch)
             
             # Validating with return
-            stop = self._validate(epoch)
+            stop = self._select_best_model(epoch)
             if stop:
                 break
                     
             torch.cuda.empty_cache()
             print(f"Epoch {epoch} | training loss: {loss_train_mean:.3f}")
         
-    def _validate(self, epoch):
+    def _select_best_model(self, epoch):
         if self.val_type == "asset":
-            val_return, val_hold_return = self._model_backtest()
+            val_return = self._model_backtest()
 
             if val_return > self.best_val_result:
-                print(f'New best model found with return {val_return} | hold return {val_hold_return}')
+                print(f'New best model found with return {val_return}')
                 self.not_improve_cnt = 0
                 self.best_val_result = val_return
                 self.model_best = self.model
@@ -234,6 +234,10 @@ class BaseTrainer:
         """
         
         # Get resume path
+        """
+        TODO:
+        - Here need modify
+        """
         ckpts = [f for f in os.listdir(self.ckpt_dir) if os.path.isfile(os.path.join(self.ckpt_dir, f)) and self.file_prefix in f and "best" not in f]
         if ckpts == []:
             return None  
@@ -243,6 +247,9 @@ class BaseTrainer:
         
         # Load checkpoint
         print("Loading checkpoint: {}".format(resume_path))
+        if not os.path.exists(resume_path):
+            print("Checkpoint not found: {}".format(resume_path))
+            return None
         checkpoint = torch.load(resume_path, weights_only=False)
 
         # load architecture params from checkpoint.
@@ -252,8 +259,8 @@ class BaseTrainer:
         try:
             self.model.load_state_dict(checkpoint['state_dict'])
         except:
-            print("Model state_dict not loaded")
-            return None
+            # ?
+            assert False, "State dict not loaded properly"
         
         # load optimizer state from checkpoint only when optimizer type is not changed.
         assert checkpoint['config']['optimizer']['type'] == self.config['optimizer']['type'], \
@@ -273,9 +280,13 @@ class BaseTrainer:
         raise NotImplementedError
     @abstractmethod
     def _model_validate(self):
+        """return loss of valid data
+        """
         raise NotImplementedError
     @abstractmethod
     def _model_backtest(self):
+        """return backtest returns of valid data
+        """
         raise NotImplementedError
     
     # Utils
