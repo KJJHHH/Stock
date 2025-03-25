@@ -34,11 +34,14 @@ python main.py test --model Transformer --stock_target 2884.TW --stock_pool 2881
 ## Result
 ### Transformer
 - Stock 2882
-![2882 performance](https://github.com/KJJHHH/Stock/blob/main/results/Transformer-result/2882.TW.png)
+<img src="./results/Transformer-result/2882.TW.png" alt="Alt Text" width="400" height="100">
 - Stock 2884
-![2884 performance](https://github.com/KJJHHH/Stock/blob/main/results/Transformer-result/2884.TW.png)
+<img src="./results/Transformer-result/2884.TW.png" alt="Alt Text" width="400" height="100">
+
+### Transformer: comparing training with single stock and multiple stock
 - Stock 2884 training with top 9 bank holding company
-![]()
+<img src="./results/Transformer-result/2884.TW: ['2884.TW', '2881.TW', '2882.TW', '2891.TW', '2885.TW', '2883.TW', '2890.TW', '2887.TW', '2888.TW'].png" alt="Alt Text" width="400" height="100">
+
 
 ## Pending updates
 - Decoder only model
