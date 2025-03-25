@@ -16,13 +16,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A simple argument parser example")
     parser.add_argument("task", help="train or test")  
     parser.add_argument("-m", "--model", help="Select model: [Transformer, Decoder only]")  
-    parser.add_argument("-s", "--stock", nargs="*", help="Enter stock id, eg. 2884.TW")  
+    parser.add_argument("-st", "--stock_target", help="Enter stock id, eg. 2884.TW") # target stock
+    parser.add_argument("-sp", "--stock_pool", nargs="*", default=[], help="Enter stock id, eg. 2881.TW")  
 
     # Parse arguments
     args = parser.parse_args()
 
     task = args.task
-    stock_list = args.stock
+    stock_list = args.stock_pool
+    target_stock = args.stock_target
+    assert target_stock not in stock_list, "TODO: remove tstock from stock-pool"
+    stock_list.insert(0, target_stock)
     MODEL = args.model
     
     ckpt_dir = "results/" + MODEL + "-temp/"
