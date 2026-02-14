@@ -1,122 +1,68 @@
-import torch
+import argparse
 import json
+import os
 
-from datas import *
-from models import *
-from trainers import *
-from backtestors import *
+import torch
+
+from backtestors import ResnetBacktestor, TransformerBacktestor
+from trainers import TransformerTrainer
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+def load_transformer_config(epochs_override=None):
+    config_path = "configs/Transformer.json"
+    if not os.path.exists(config_path):
+        raise FileNotFoundError("configs/Transformer.json not found")
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    if epochs_override is not None:
+        config["epochs"] = int(epochs_override)
+
+    return config
+
+
 if __name__ == "__main__":
-    
-    import argparse
+    parser = argparse.ArgumentParser(description="Stock model trainer and backtester")
+    parser.add_argument("task", choices=["train", "test"], help="Run training or backtesting")
+    parser.add_argument("-m", "--model", required=True, help="Model name: Transformer or Resnet")
+    parser.add_argument(
+        "-st", "--stock_target", required=True, help="Target stock symbol, e.g. 2884.TW"
+    )
+    parser.add_argument(
+        "-sp",
+        "--stock_pool",
+        nargs="*",
+        default=[],
+        help="Optional pretrain pool symbols, e.g. 2881.TW 2882.TW",
+    )
+    parser.add_argument("-e", "--epochs", default=None, help="Optional epoch override")
 
-    # Create argument parser
-    parser = argparse.ArgumentParser(description="A simple argument parser example")
-    parser.add_argument("task", help="train or test")  
-    parser.add_argument("-m", "--model", help="Select model: [Transformer, Decoder only]")  
-    parser.add_argument("-st", "--stock_target", help="Enter stock id, eg. 2884.TW") # target stock
-    parser.add_argument("-sp", "--stock_pool", nargs="*", default=[], help="Enter stock id, eg. 2881.TW")  
-    parser.add_argument("-e", "--epochs", default=None, help="Enter start date, eg. 2016-01-01")
-
-    # Parse arguments
     args = parser.parse_args()
 
-    task = args.task
-    stock_list = args.stock_pool
-    target_stock = args.stock_target
-    assert target_stock not in stock_list, "TODO: remove tstock from stock-pool"
-    stock_list.insert(0, target_stock)
-    
-    epoch = args.epochs
-    MODEL = args.model
-    
-    ckpt_dir = "results/" + MODEL + "-temp/"
-    performance_dir = "results/" + MODEL + "-result/"
-    
-    """
-    Model dir: models in same model dir use same data
-    |transformer_based
-    |----|models.Transformer
-    |----|...
-    |cv_based
-    |----|...
-    """
-    # MODEL type
-    if MODEL == "Transformer": 
-        
-        assert os.path.exists("configs/Transformer.json"), "Transformer.json not found"
-        
-        with open("configs/Transformer.json", "r") as f:
-            config = json.load(f)
-            
-        if epoch is not None:
-            config["epochs"] = int(epoch)
-            
-        # Target stock data
-        trainer = TransformerTrainer
-        testor = TransformerBacktestor
-        
-    if MODEL == "Decoder-Only":
-        pass
-    
-    if MODEL == "Resnet":
-        
-        config = {
-            # data
-            "ntoken": 50,
-            "start_date": "2016-01-01",
-            "end_date": "2024-12-28",
-            
-            # model
-            "name": MODEL,
-            "epochs": 200,
-            # loss or  asset
-            "val_type": "asset",
-            "optimizer": {
-                "type": "Adam",
-                "args":{
-                    "lr": 0.001,
-                    "weight_decay": 0.00001,
-                    "amsgrad": True
-                }
-            },
-            "lr_scheduler": {
-                "type": "StepLR",
-                "args": {
-                    "step_size": 1,
-                    "gamma": 0.5
-                }
-            },
-        }
-        
-        data_class = CVBasedData(
-            stock=stock_list[0],
-            start_date=config["start_date"],
-            end_date=config["end_date"],
-            window=config["ntoken"],
-            batch_size=64,
-            )
-        model = ResNet(BasicBlock, [3, 4, 6, 3], 1).to(device)
-        trainer = ResnetTrainer
-    
-    # Tasks
-    dirs = {"ckpt_dir": ckpt_dir, "performance_dir": performance_dir, "file_prefix": "-".join(stock_list)}
-    
-    if task == "train":
-        trainer = trainer(
-            stock_list=stock_list, 
-            config=config,  
-            dirs=dirs
+    stock_list = [args.stock_target] + [s for s in args.stock_pool if s != args.stock_target]
+    dirs = {
+        "ckpt_dir": f"results/{args.model}-temp/",
+        "performance_dir": f"results/{args.model}-result/",
+        "file_prefix": "-".join(stock_list),
+    }
+
+    if args.model == "Transformer":
+        config = load_transformer_config(args.epochs)
+
+        if args.task == "train":
+            trainer = TransformerTrainer(stock_list=stock_list, config=config, dirs=dirs)
+            trainer.training()
+        else:
+            testor = TransformerBacktestor(stock_list=stock_list, config=config, dirs=dirs)
+            testor.plot()
+
+    elif args.model == "Resnet":
+        raise NotImplementedError(
+            "Resnet pipeline needs a dedicated config file and trainer wiring; use Transformer for now."
         )
-        
-        trainer.training()
-        
-    if task == "test":
-        testor = testor(
-            stock_list, 
-            config=config,
-            dirs=dirs
-            )
-        testor.plot()
+    else:
+        raise ValueError(f"Unsupported model: {args.model}")

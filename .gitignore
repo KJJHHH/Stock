@@ -18,3 +18,5 @@ __pycache__
 Sentiment-Analysis-Stocks
 decoder-only/
 temp/
+
+.pycache/
