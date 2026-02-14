@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 
 from backtest import backtest, backtest_sklearn, backtest_signals
-from data_loader import create_sequences, load_features, load_raw_close
+from data_loader import create_sequences, load_execution_prices, load_features, load_raw_close
 from sa_models.ms_kalman import MSKalmanConfig, MSKalmanFilter, default_config_from_returns
 from sa_models.ga_svr import mape, train_predict_iga_svr
 from sa_models import (
@@ -71,6 +71,7 @@ def run_supervised(
     features_all, raw_returns_all, dates_all = load_features(
         ticker, full_start, full_end
     )
+    open_all, close_all = load_execution_prices(ticker, full_start, full_end, dates_all)
     train_mask = (dates_all >= np.datetime64(train_start)) & (
         dates_all < np.datetime64(train_end)
     )
@@ -83,6 +84,8 @@ def run_supervised(
     backtest_features = features_all[backtest_mask]
     backtest_returns = raw_returns_all[backtest_mask]
     backtest_dates = dates_all[backtest_mask]
+    backtest_open = open_all[backtest_mask]
+    backtest_close = close_all[backtest_mask]
 
     if model_name.value == "MSKF":
         train_returns = train_returns.reshape(-1)
@@ -114,12 +117,23 @@ def run_supervised(
             signals = signals[warmup_steps:]
             backtest_returns = backtest_returns[warmup_steps:]
             backtest_dates = backtest_dates[warmup_steps:]
-        _, backtest_return, cumulative_return = backtest_signals(
+            backtest_open = backtest_open[warmup_steps:]
+            backtest_close = backtest_close[warmup_steps:]
+        _, backtest_return, cumulative_return, trades = backtest_signals(
             signals,
             backtest_returns,
             threshold=0.0,
             trading_cost=transaction_cost,
+            y_dates=backtest_dates,
+            open_prices=backtest_open,
+            close_prices=backtest_close,
         )
+        if trades is not None:
+            os.makedirs("result/trades", exist_ok=True)
+            ticker_tag = ticker.replace("^", "")
+            trades_path = os.path.join("result", "trades", f"trades_{ticker_tag}_{model_name_str}.csv")
+            trades.to_csv(trades_path, index=False)
+            print(f"Saved trade log to {trades_path}")
         print(f"Backtest strategy return: {backtest_return:.2%}")
 
         initial_asset = 100.0
@@ -156,7 +170,7 @@ def run_supervised(
         min_ret_len = min(len(predicted_return), len(actual_return))
         predicted_return = predicted_return[:min_ret_len]
         actual_return = actual_return[:min_ret_len]
-        _, backtest_return, cumulative_return = backtest_signals(
+        _, backtest_return, cumulative_return, _ = backtest_signals(
             predicted_return,
             actual_return,
             threshold=0.0,
@@ -215,11 +229,14 @@ def run_supervised(
     X_backtest = torch.from_numpy(X_backtest).float()
     y_backtest = torch.from_numpy(y_backtest).float()
     raw_returns = backtest_returns[seq_length:]
+    backtest_open = backtest_open[seq_length:]
+    backtest_close = backtest_close[seq_length:]
     backtest_dates = backtest_dates[seq_length:]
     if task == "regression":
         y_backtest = (y_backtest - return_mean) / return_std
 
     input_dim = X_tr.shape[-1]
+    trades = None
 
     if model_name.value == "GBDT":
         model_config = config.get("model_structure", {}).get(model_name.value, {})
@@ -265,7 +282,7 @@ def run_supervised(
             model.fit(X_tr_np, y_tr_np)
             threshold = 0.0
 
-        predicted, y_backtest, backtest_return, cumulative_return, backtest_dates = backtest_sklearn(
+        predicted, y_backtest, backtest_return, cumulative_return, backtest_dates, trades = backtest_sklearn(
             model,
             X_backtest.numpy(),
             y_backtest.numpy(),
@@ -276,6 +293,8 @@ def run_supervised(
             raw_returns=raw_returns,
             threshold=threshold,
             trading_cost=transaction_cost,
+            open_prices=backtest_open,
+            close_prices=backtest_close,
         )
     else:
         model_config = config.get("model_structure", {}).get(model_name.value, {})
@@ -377,7 +396,7 @@ def run_supervised(
             target_rate = float((y_val == 1).sum().item()) / max(1, len(y_val))
             threshold = np.quantile(val_probs, 1.0 - target_rate)
 
-        predicted, y_backtest, backtest_return, cumulative_return, backtest_dates = backtest(
+        predicted, y_backtest, backtest_return, cumulative_return, backtest_dates, trades = backtest(
             model,
             X_backtest,
             scaler,
@@ -390,7 +409,16 @@ def run_supervised(
             raw_returns=raw_returns,
             threshold=threshold,
             trading_cost=transaction_cost,
+            open_prices=backtest_open,
+            close_prices=backtest_close,
         )
+
+    if trades is not None:
+        os.makedirs("result/trades", exist_ok=True)
+        ticker_tag = ticker.replace("^", "")
+        trades_path = os.path.join("result", "trades", f"trades_{ticker_tag}_{model_name_str}_{task}.csv")
+        trades.to_csv(trades_path, index=False)
+        print(f"Saved trade log to {trades_path}")
 
     print(f"Backtest strategy return: {backtest_return:.2%}")
     initial_asset = 100.0

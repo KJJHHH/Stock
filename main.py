@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import torch
@@ -7,6 +8,7 @@ import yaml
 
 from backtestors import TransformerBacktestor
 from constants import ModelName
+from mechanism_demo import main as run_mechanism_demo
 from rl_runner import run_rl
 from supervised import run_supervised
 from trainers import TransformerTrainer
@@ -22,7 +24,13 @@ RL_MODEL_MAP = {
     "RL_TD3": "td3",
 }
 SUPERVISED_MODELS = {m.value for m in ModelName}
-ALL_MODELS = {"Transformer", "Resnet"} | SUPERVISED_MODELS | set(RL_MODEL_MAP.keys())
+ALL_MODELS = {"Transformer", "Resnet", "MECHANISM"} | SUPERVISED_MODELS | set(RL_MODEL_MAP.keys())
+AUTO_DEFAULTS = {
+    "model": "Transformer",
+    "stock_target": "2330.TW",
+    "stock_pool": [],
+    "epochs": None,
+}
 
 
 def select_device():
@@ -84,7 +92,7 @@ def run_transformer(args):
     perf_dir = result_root / f"{args.model}-result"
 
     # Backward-compatible checkpoint lookup: if new dir has no checkpoints,
-    # read checkpoints from legacy `results/` while still saving plots to `result/`.
+    # read checkpoints from legacy `results/`.
     if args.task == "test":
         has_new_ckpt = ckpt_dir.exists() and any(ckpt_dir.glob("*.pth"))
         legacy_ckpt_dir = legacy_root / f"{args.model}-temp"
@@ -100,13 +108,11 @@ def run_transformer(args):
 
     if args.model == "Transformer":
         config = load_transformer_config(args.epochs)
-
-        if args.task == "train":
-            trainer = TransformerTrainer(stock_list=stock_list, config=config, dirs=dirs)
-            trainer.training()
-        else:
-            testor = TransformerBacktestor(stock_list=stock_list, config=config, dirs=dirs)
-            testor.plot()
+        print("Transformer mode: always run train + backtest")
+        trainer = TransformerTrainer(stock_list=stock_list, config=config, dirs=dirs)
+        trainer.training()
+        testor = TransformerBacktestor(stock_list=stock_list, config=config, dirs=dirs)
+        testor.plot()
         return
 
     if args.model == "Resnet":
@@ -117,6 +123,10 @@ def run_transformer(args):
 
 
 def run_unified_model(args):
+    if args.model == "MECHANISM":
+        run_mechanism_demo()
+        return
+
     config = load_stockai_config()
 
     if args.stock_target:
@@ -158,7 +168,7 @@ def run_unified_model(args):
 
     if args.model not in SUPERVISED_MODELS:
         raise ValueError(
-            f"Model {args.model} is not supported for unified run. Supported: {sorted(SUPERVISED_MODELS | set(RL_MODEL_MAP.keys()))}"
+            f"Model {args.model} is not supported for unified run. Supported: {sorted(SUPERVISED_MODELS | set(RL_MODEL_MAP.keys()) | {'MECHANISM'})}"
         )
 
     model_name = ModelName(args.model)
@@ -190,17 +200,19 @@ def build_parser():
     parser = argparse.ArgumentParser(description="Unified Stock project entrypoint")
     parser.add_argument(
         "task",
+        nargs="?",
+        default="run",
         choices=["train", "test", "backtest", "run"],
-        help="train/test/backtest for Transformer; run/backtest for StockAI models and RL",
+        help="Ignored in unified mode. Kept only for backward compatibility.",
     )
     parser.add_argument(
         "-m",
         "--model",
-        required=True,
+        default=AUTO_DEFAULTS["model"],
         choices=sorted(ALL_MODELS),
-        help="Model name",
+        help="Model name (always runs full pipeline: train + backtest where applicable).",
     )
-    parser.add_argument("-st", "--stock_target", default=None, help="Ticker, e.g. 2330.TW")
+    parser.add_argument("-st", "--stock_target", default=AUTO_DEFAULTS["stock_target"], help="Ticker, e.g. 2330.TW")
     parser.add_argument(
         "-sp",
         "--stock_pool",
@@ -225,25 +237,13 @@ def build_parser():
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    print("Unified mode: always run complete flow")
 
     if args.model in {"Transformer", "Resnet"}:
-        if args.task not in {"train", "test", "backtest"}:
-            raise ValueError("Transformer/Resnet supports train/test/backtest tasks")
-        if not args.stock_target:
-            raise ValueError("--stock_target is required for Transformer/Resnet tasks")
-        if args.task == "backtest":
-            args.task = "test"
         run_transformer(args)
         return
 
-    # Unified StockAI path: `run` and `backtest` both execute the full model flow.
-    if args.task in {"run", "backtest"}:
-        run_unified_model(args)
-        return
-
-    raise ValueError(
-        "For non-Transformer models, use task `run` or `backtest`."
-    )
+    run_unified_model(args)
 
 
 if __name__ == "__main__":

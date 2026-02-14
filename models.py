@@ -65,10 +65,20 @@ class Transformer(nn.Module):
     def forward(self, tgt: torch.Tensor, src: torch.Tensor = None) -> torch.Tensor:
         if src is None:
             raise ValueError("src is required for Transformer forward.")
+        if src.dim() != 3 or tgt.dim() != 3:
+            raise ValueError("Expected src and tgt as 3D tensors: (batch, seq, feature).")
+        if src.size(0) != 1:
+            raise ValueError("Expected src batch dimension to be 1 before expansion.")
 
-        src = src.repeat(tgt.size(0), 1, 1)
-        src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(device)
-        tgt_mask = nn.Transformer.generate_square_subsequent_mask(tgt.size(1)).to(device)
+        # Explicit einsum dimensions:
+        # b: batch, s: source sequence length, d: feature dimension
+        # src_single: (s, d), batch_scale: (b), expanded src: (b, s, d)
+        src_single = src.squeeze(0)
+        batch = tgt.size(0)
+        batch_scale = torch.ones(batch, device=src.device, dtype=src.dtype)
+        src = torch.einsum("sd,b->bsd", src_single, batch_scale)
+        src_mask = nn.Transformer.generate_square_subsequent_mask(src.size(1)).to(src.device)
+        tgt_mask = nn.Transformer.generate_square_subsequent_mask(tgt.size(1)).to(tgt.device)
         output = self.transformer(src, tgt, src_mask=src_mask, tgt_mask=tgt_mask)
         return output
 

@@ -72,6 +72,17 @@ def load_features(ticker, start_date, end_date):
     return features.to_numpy(dtype=np.float32), raw_returns, dates
 
 
+def load_execution_prices(ticker, start_date, end_date, dates):
+    data = yf.download(ticker, start=start_date, end=end_date)
+    frame = data[["Open", "Close"]].astype(np.float32)
+    idx = pd.DatetimeIndex(dates)
+    aligned = frame.reindex(idx).ffill().bfill()
+    return (
+        aligned["Open"].to_numpy(dtype=np.float32).reshape(-1, 1),
+        aligned["Close"].to_numpy(dtype=np.float32).reshape(-1, 1),
+    )
+
+
 def load_data(ticker, start_date, end_date, scaler=None):
     features, raw_returns, dates = load_features(ticker, start_date, end_date)
     if scaler is None:

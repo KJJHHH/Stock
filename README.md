@@ -9,6 +9,20 @@ Predict the daily percentile change for open and close price.
 pip install -r requirements.txt
 ```
 
+### Trading Mechanism (SOTA-style stack)
+Real implementation modules are under `mechanism/`:
+- `alpha.py`: cross-sectional alpha signal builder
+- `portfolio.py`: risk-scaled target weights
+- `execution.py`: fee/spread/impact execution model
+- `risk.py`: portfolio constraints
+- `validation.py`: walk-forward splits with embargo
+- `live_loop.py`: daily execution loop
+
+Quick demo:
+```bash
+uv run mechanism_demo.py
+```
+
 ### Train and backtest
 - `task`: `train` or `test`
 - `--model`: currently supports `Transformer`
