@@ -77,10 +77,24 @@ def run_transformer(args):
     device = select_device()
     print_runtime_precision(device)
 
+    result_root = ROOT_DIR / "result"
+    legacy_root = ROOT_DIR / "results"
     stock_list = [args.stock_target] + [s for s in args.stock_pool if s != args.stock_target]
+    ckpt_dir = result_root / f"{args.model}-temp"
+    perf_dir = result_root / f"{args.model}-result"
+
+    # Backward-compatible checkpoint lookup: if new dir has no checkpoints,
+    # read checkpoints from legacy `results/` while still saving plots to `result/`.
+    if args.task == "test":
+        has_new_ckpt = ckpt_dir.exists() and any(ckpt_dir.glob("*.pth"))
+        legacy_ckpt_dir = legacy_root / f"{args.model}-temp"
+        has_legacy_ckpt = legacy_ckpt_dir.exists() and any(legacy_ckpt_dir.glob("*.pth"))
+        if not has_new_ckpt and has_legacy_ckpt:
+            ckpt_dir = legacy_ckpt_dir
+
     dirs = {
-        "ckpt_dir": str(ROOT_DIR / "result" / f"{args.model}-temp") + "/",
-        "performance_dir": str(ROOT_DIR / "result" / f"{args.model}-result") + "/",
+        "ckpt_dir": str(ckpt_dir) + "/",
+        "performance_dir": str(perf_dir) + "/",
         "file_prefix": "-".join(stock_list),
     }
 

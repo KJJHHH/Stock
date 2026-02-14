@@ -23,6 +23,8 @@ class Backtestor:
         self.ckpt_dir = dirs["ckpt_dir"]
         self.performance_dir = dirs["performance_dir"]
         self.file_prefix = dirs["file_prefix"]
+        os.makedirs(self.performance_dir, exist_ok=True)
+        os.makedirs(self.ckpt_dir, exist_ok=True)
 
         self.model = self._init_model().to(device)
         self.data = self._init_data()
