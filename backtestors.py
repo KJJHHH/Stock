@@ -5,7 +5,11 @@ from datas import CVBasedData, TransformerData
 from models import BasicBlock, ResNet, Transformer
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else ("mps" if torch.backends.mps.is_available() else "cpu")
+)
 
 
 class TransformerBacktestor(Backtestor):
@@ -34,6 +38,8 @@ class TransformerBacktestor(Backtestor):
     @staticmethod
     def _test_method(model, data):
         loader, src = data
+        use_fp16 = device.type in {"cuda", "mps"}
+        autocast_device_type = device.type if use_fp16 else "cpu"
 
         model.eval()
         with torch.no_grad():
@@ -42,7 +48,12 @@ class TransformerBacktestor(Backtestor):
                 y_test = y_test.to(device)
                 src = src.to(device)
 
-                result = model(src=src, tgt=x_test)
+                with torch.autocast(
+                    device_type=autocast_device_type,
+                    dtype=torch.float16,
+                    enabled=use_fp16,
+                ):
+                    result = model(src=src, tgt=x_test)
                 result = result[:, -1, -1].detach()
                 truth = y_test[:, -1, -1].detach()
 

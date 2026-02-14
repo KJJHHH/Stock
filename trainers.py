@@ -7,7 +7,11 @@ from datas import TransformerData
 from models import Transformer
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else ("mps" if torch.backends.mps.is_available() else "cpu")
+)
 
 
 class TransformerTrainer(BaseTrainer):
@@ -57,10 +61,16 @@ class TransformerTrainer(BaseTrainer):
             src = self.data.src.to(self.device)
 
             self.optimizer.zero_grad()
-            outputs = self.model(src=src, tgt=x)
-            loss = self.criterion(outputs, y)
-            loss.backward()
-            self.optimizer.step()
+            with torch.autocast(
+                device_type=self.autocast_device_type,
+                dtype=torch.float16,
+                enabled=self.use_fp16,
+            ):
+                outputs = self.model(src=src, tgt=x)
+                loss = self.criterion(outputs, y)
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             loss_train_mean += loss.item()
 
         return loss_train_mean / len(self.data.trainloader)
@@ -75,8 +85,13 @@ class TransformerTrainer(BaseTrainer):
                 y_val = y_val.to(self.device)
                 src = self.data.src.to(self.device)
 
-                outputs_val = self.model(src=src, tgt=x_val)
-                loss = self.criterion(outputs_val, y_val)
+                with torch.autocast(
+                    device_type=self.autocast_device_type,
+                    dtype=torch.float16,
+                    enabled=self.use_fp16,
+                ):
+                    outputs_val = self.model(src=src, tgt=x_val)
+                    loss = self.criterion(outputs_val, y_val)
                 loss_valid_mean += loss.item()
 
         return loss_valid_mean / len(self.data.validloader)

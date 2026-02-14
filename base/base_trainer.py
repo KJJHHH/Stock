@@ -14,7 +14,11 @@ class BaseTrainer:
         config,
         dirs,
         short=True,
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        device=torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else ("mps" if torch.backends.mps.is_available() else "cpu")
+        ),
     ) -> None:
         self.stock = None
         self.stock_target = stock_list[0]
@@ -45,6 +49,10 @@ class BaseTrainer:
         self.model = self._init_model().to(self.device)
         self.model_best = self.model
         self.criterion = nn.MSELoss()
+        self.use_fp16 = self.device.type in {"cuda", "mps"}
+        self.autocast_device_type = self.device.type if self.use_fp16 else "cpu"
+        self.compute_dtype = torch.float16 if self.use_fp16 else torch.float32
+        self.scaler = torch.cuda.amp.GradScaler(enabled=self.device.type == "cuda")
         self.optimizer = optim.Adam(
             self.model.parameters(),
             lr=self.lr,
@@ -59,6 +67,8 @@ class BaseTrainer:
 
         self.short = short
         print(f"Validation method: {self.val_type}")
+        print(f"Mixed precision FP16: {self.use_fp16}")
+        print(f"Compute dtype: {self.compute_dtype}")
 
     @abstractmethod
     def _init_model(self):

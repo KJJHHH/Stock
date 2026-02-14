@@ -4,7 +4,11 @@ import torch
 import torch.nn as nn
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else ("mps" if torch.backends.mps.is_available() else "cpu")
+)
 
 
 class PositionalEncoding(nn.Module):

@@ -25,6 +25,20 @@ SUPERVISED_MODELS = {m.value for m in ModelName}
 ALL_MODELS = {"Transformer", "Resnet"} | SUPERVISED_MODELS | set(RL_MODEL_MAP.keys())
 
 
+def select_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+def print_runtime_precision(device):
+    dtype = torch.float16 if device.type in {"cuda", "mps"} else torch.float32
+    print(f"Using device: {device}")
+    print(f"Using dtype: {dtype}")
+
+
 def load_transformer_config(epochs_override=None):
     config_path = ROOT_DIR / "configs" / "Transformer.json"
     if not config_path.exists():
@@ -60,6 +74,9 @@ def load_stockai_config():
 
 
 def run_transformer(args):
+    device = select_device()
+    print_runtime_precision(device)
+
     stock_list = [args.stock_target] + [s for s in args.stock_pool if s != args.stock_target]
     dirs = {
         "ckpt_dir": str(ROOT_DIR / "results" / f"{args.model}-temp") + "/",
@@ -99,8 +116,8 @@ def run_unified_model(args):
     if args.backtest_end:
         config["backtest_end"] = args.backtest_end
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    device = select_device()
+    print_runtime_precision(device)
 
     ticker = config["ticker"]
     train_start = config["train_start"]
