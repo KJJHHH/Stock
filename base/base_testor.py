@@ -153,7 +153,8 @@ class Backtestor:
                         (self.loader, self.data.src),
                         verbose=False,
                     )
-                    plt.plot(pd.DataFrame(asset_hist).set_index(self.dates), label=label + str(epoch))
+                    curve_df = pd.DataFrame(asset_hist, index=pd.Index(self.dates))
+                    plt.plot(curve_df, label=label + str(epoch))
 
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -166,7 +167,8 @@ class Backtestor:
             use_model=False,
             verbose=False,
         )
-        plt.plot(pd.DataFrame(asset_hist).set_index(self.dates), linestyle="dashed", label=label)
+        curve_df = pd.DataFrame(asset_hist, index=pd.Index(self.dates))
+        plt.plot(curve_df, linestyle="dashed", label=label)
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
