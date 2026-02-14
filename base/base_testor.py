@@ -70,13 +70,50 @@ class Backtestor:
         self.model.load_state_dict(checkpoint["state_dict"])
         return True
 
+    def __list_ckpt_epochs(self, prefix):
+        if not os.path.isdir(self.ckpt_dir):
+            return []
+        epochs = []
+        for name in os.listdir(self.ckpt_dir):
+            if not name.startswith(prefix + "-") or not name.endswith(".pth"):
+                continue
+            if name.endswith("-best.pth"):
+                continue
+            stem = name[:-4]
+            try:
+                epoch = int(stem.split("-")[-1])
+                epochs.append(epoch)
+            except ValueError:
+                continue
+        return sorted(set(epochs))
+
     def single_stock_training(self):
-        ckpts = [0, 40, "best"]
-        self.file_prefix = self.stock_target
-        self._plot(ckpts, "single")
+        single_prefix = self.stock_target
+        epochs = self.__list_ckpt_epochs(single_prefix)
+        ckpts = []
+        if epochs:
+            ckpts.append(epochs[0])
+            ckpts.append(epochs[-1])
+        if os.path.exists(os.path.join(self.ckpt_dir, f"{single_prefix}-best.pth")):
+            ckpts.append("best")
+        if ckpts:
+            original_prefix = self.file_prefix
+            self.file_prefix = single_prefix
+            self._plot(ckpts, "single")
+            self.file_prefix = original_prefix
+        else:
+            print(f"No single-stock checkpoints found for prefix: {single_prefix}")
 
     def multi_stock_training(self):
-        self._plot(["best"], "multiple")
+        has_best = os.path.exists(os.path.join(self.ckpt_dir, f"{self.file_prefix}-best.pth"))
+        if has_best:
+            self._plot(["best"], "multiple")
+        else:
+            epochs = self.__list_ckpt_epochs(self.file_prefix)
+            if epochs:
+                self._plot([epochs[-1]], "multiple")
+            else:
+                print(f"No multi-stock checkpoints found for prefix: {self.file_prefix}")
 
     def buy_hold(self):
         self._plot()
@@ -92,8 +129,9 @@ class Backtestor:
         plt.title(f"Model vs Buy & Hold Strategy for {self.stock_target}")
         plt.legend()
         plt.grid(True)
-        save_path = os.path.join(self.performance_dir, f"{self.stock_target}: {self.stock}.png")
+        save_path = os.path.join(self.performance_dir, f"{self.stock_target}.png")
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
+        print(f"Saved backtest plot: {save_path}")
         plt.show()
 
     def _plot(self, ckpts: list = None, train_method: str = None):
