@@ -176,8 +176,8 @@ def build_parser():
     parser = argparse.ArgumentParser(description="Unified Stock project entrypoint")
     parser.add_argument(
         "task",
-        choices=["train", "test", "run"],
-        help="train/test for Transformer; run for StockAI models and RL",
+        choices=["train", "test", "backtest", "run"],
+        help="train/test/backtest for Transformer; run/backtest for StockAI models and RL",
     )
     parser.add_argument(
         "-m",
@@ -212,15 +212,24 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.task in {"train", "test"}:
-        if args.model not in {"Transformer", "Resnet"}:
-            raise ValueError("task train/test only supports model Transformer or Resnet")
+    if args.model in {"Transformer", "Resnet"}:
+        if args.task not in {"train", "test", "backtest"}:
+            raise ValueError("Transformer/Resnet supports train/test/backtest tasks")
         if not args.stock_target:
-            raise ValueError("--stock_target is required for task train/test")
+            raise ValueError("--stock_target is required for Transformer/Resnet tasks")
+        if args.task == "backtest":
+            args.task = "test"
         run_transformer(args)
         return
 
-    run_unified_model(args)
+    # Unified StockAI path: `run` and `backtest` both execute the full model flow.
+    if args.task in {"run", "backtest"}:
+        run_unified_model(args)
+        return
+
+    raise ValueError(
+        "For non-Transformer models, use task `run` or `backtest`."
+    )
 
 
 if __name__ == "__main__":

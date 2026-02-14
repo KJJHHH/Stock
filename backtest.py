@@ -1,6 +1,7 @@
 import numpy as np
 
 from predict import predict, predict_sklearn
+from strategy import StrategyConfig, run_strategy
 
 
 class Backtester:
@@ -31,17 +32,19 @@ class Backtester:
             return_std=return_std,
             task=task,
         )
-        actual_return = raw_returns
-        if task == "classification":
-            position = np.where(predicted > self.threshold, 1.0, 0.0)
-        else:
-            position = np.where(predicted > 0, 1.0, 0.0)
-        strategy_return = position * actual_return
-        if self.trading_cost:
-            position_change = np.abs(np.diff(position, axis=0, prepend=0.0))
-            strategy_return = strategy_return - (position_change * self.trading_cost)
-        cumulative_return = np.cumprod(1 + strategy_return, axis=0) - 1
-        return predicted, y_test, float(cumulative_return[-1][0]), cumulative_return, y_dates
+        threshold = self.threshold if task == "classification" else 0.0
+        result = run_strategy(
+            predicted,
+            raw_returns,
+            StrategyConfig(
+                threshold=threshold,
+                trading_cost=self.trading_cost,
+                slippage=0.0,
+                allow_short=False,
+                max_position=1.0,
+            ),
+        )
+        return predicted, y_test, result["final_return"], result["equity_curve"], y_dates
 
 
 class SklearnBacktester:
@@ -68,17 +71,19 @@ class SklearnBacktester:
             return_std=return_std,
             task=task,
         )
-        actual_return = raw_returns.reshape(-1, 1)
-        if task == "classification":
-            position = np.where(predicted > self.threshold, 1.0, 0.0)
-        else:
-            position = np.where(predicted > 0, 1.0, 0.0)
-        strategy_return = position * actual_return
-        if self.trading_cost:
-            position_change = np.abs(np.diff(position, axis=0, prepend=0.0))
-            strategy_return = strategy_return - (position_change * self.trading_cost)
-        cumulative_return = np.cumprod(1 + strategy_return, axis=0) - 1
-        return predicted, y_test, float(cumulative_return[-1][0]), cumulative_return, y_dates
+        threshold = self.threshold if task == "classification" else 0.0
+        result = run_strategy(
+            predicted,
+            raw_returns.reshape(-1, 1),
+            StrategyConfig(
+                threshold=threshold,
+                trading_cost=self.trading_cost,
+                slippage=0.0,
+                allow_short=False,
+                max_position=1.0,
+            ),
+        )
+        return predicted, y_test, result["final_return"], result["equity_curve"], y_dates
 
 
 class SignalBacktester:
@@ -87,18 +92,20 @@ class SignalBacktester:
         self.trading_cost = trading_cost
 
     def run(self, signals: np.ndarray, raw_returns: np.ndarray):
-        signals = np.asarray(signals).reshape(-1)
-        actual_return = np.asarray(raw_returns).reshape(-1)
-        min_len = min(len(signals), len(actual_return))
-        signals = signals[:min_len].reshape(-1, 1)
-        actual_return = actual_return[:min_len].reshape(-1, 1)
-        position = np.where(signals > self.threshold, 1.0, 0.0)
-        strategy_return = position * actual_return
-        if self.trading_cost:
-            position_change = np.abs(np.diff(position, axis=0, prepend=0.0))
-            strategy_return = strategy_return - (position_change * self.trading_cost)
-        cumulative_return = np.cumprod(1 + strategy_return, axis=0) - 1
-        return signals, float(cumulative_return[-1][0]), cumulative_return
+        signals = np.asarray(signals).reshape(-1, 1)
+        actual_return = np.asarray(raw_returns).reshape(-1, 1)
+        result = run_strategy(
+            signals,
+            actual_return,
+            StrategyConfig(
+                threshold=self.threshold,
+                trading_cost=self.trading_cost,
+                slippage=0.0,
+                allow_short=False,
+                max_position=1.0,
+            ),
+        )
+        return signals, result["final_return"], result["equity_curve"]
 
 
 def backtest(
