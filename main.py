@@ -79,8 +79,8 @@ def run_transformer(args):
 
     stock_list = [args.stock_target] + [s for s in args.stock_pool if s != args.stock_target]
     dirs = {
-        "ckpt_dir": str(ROOT_DIR / "results" / f"{args.model}-temp") + "/",
-        "performance_dir": str(ROOT_DIR / "results" / f"{args.model}-result") + "/",
+        "ckpt_dir": str(ROOT_DIR / "result" / f"{args.model}-temp") + "/",
+        "performance_dir": str(ROOT_DIR / "result" / f"{args.model}-result") + "/",
         "file_prefix": "-".join(stock_list),
     }
 

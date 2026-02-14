@@ -66,9 +66,18 @@ class BaseTrainer:
         )
 
         self.short = short
-        print(f"Validation method: {self.val_type}")
-        print(f"Mixed precision FP16: {self.use_fp16}")
-        print(f"Compute dtype: {self.compute_dtype}")
+        print("Training settings:")
+        print(f"  epochs: {self.epochs}")
+        print(f"  batch_size: {self.config.get('batch_size')}")
+        print(f"  val_type: {self.val_type}")
+        print(f"  optimizer: {self.config.get('optimizer', {}).get('type')}")
+        print(f"  lr: {self.lr}")
+        print(f"  weight_decay: {self.weight_decay}")
+        print(f"  amsgrad: {self.amsgrad}")
+        print(f"  scheduler_step: {self.scheduler_step}")
+        print(f"  scheduler_gamma: {self.scheduler_gamma}")
+        print(f"  mixed_precision_fp16: {self.use_fp16}")
+        print(f"  compute_dtype: {self.compute_dtype}")
 
     @abstractmethod
     def _init_model(self):

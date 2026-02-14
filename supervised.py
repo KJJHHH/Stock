@@ -37,11 +37,16 @@ def _plot_backtest(dates, equity_curve, buy_hold, ticker, model_name_str, task=N
     plt.legend()
     plt.tight_layout()
     backend = plt.get_backend().lower()
+    model_dir = os.path.join("result", f"{model_name_str}-result")
+    os.makedirs(model_dir, exist_ok=True)
     if "agg" in backend:
-        plot_path = os.path.join("backtest", plot_name)
+        plot_path = os.path.join(model_dir, plot_name)
         plt.savefig(plot_path, dpi=150)
         print(f"Saved backtest plot to {plot_path}")
     else:
+        plot_path = os.path.join(model_dir, plot_name)
+        plt.savefig(plot_path, dpi=150)
+        print(f"Saved backtest plot to {plot_path}")
         plt.show()
 
 
