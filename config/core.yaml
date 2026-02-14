@@ -1,0 +1,19 @@
+# Core runtime settings.
+# ticker: Yahoo Finance ticker symbol.
+ticker: "2330.tw"
+# train_start: training start date (YYYY-MM-DD).
+train_start: "2010-01-01"
+# train_end: training end date (YYYY-MM-DD).
+train_end: "2025-01-01"
+# backtest_start: backtest start date (YYYY-MM-DD).
+backtest_start: "2025-01-01"
+# backtest_end: backtest end date (YYYY-MM-DD).
+backtest_end: "2026-01-01"
+# seq_length: sequence length for supervised models.
+seq_length: 10
+# model_name: model selector (e.g., TCN, LSTM, GRU, TransformerEncoder, DecoderOnly, GBDT, MSKF, IGA_SVR).
+model_name: "MSKF"
+# mode: run mode (supervised, rl, both).
+mode: "supervised"
+# task: supervised task type (R, C).
+task: "C"

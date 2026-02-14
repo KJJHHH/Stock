@@ -1,0 +1,18 @@
+training:
+  defaults:
+    epochs: 50
+    batch_size: 32
+    lr: 0.001
+    weight_decay: 0.0001
+    early_stopping_patience: 15
+    scheduler_type: "plateau"
+
+  # Non-neural or special models (training settings are unused but kept for consistency).
+  models:    
+    GBDT:
+      random_state: 42
+    MSKF:
+      warmup_steps: 0
+    IGA_SVR:
+      recent_years: 5
+      random_state: 42

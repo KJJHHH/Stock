@@ -1,0 +1,58 @@
+rl:
+  algorithm: "sac"
+  window: 100
+  dqn:
+    episodes: 20
+    gamma: 0.99
+    lr: 0.001
+    batch_size: 64
+    buffer_size: 50000
+    epsilon_start: 1.0
+    epsilon_min: 0.05
+    epsilon_decay: 0.95
+    target_update: 200
+  ppo:
+    episodes: 30
+    gamma: 0.99
+    gae_lambda: 0.95
+    lr: 0.0003
+    ppo_epochs: 4
+    clip_ratio: 0.2
+    value_coef: 0.5
+    entropy_coef: 0.01
+  ppo_tuned:
+    episodes: 50
+    gamma: 0.995
+    gae_lambda: 0.95
+    lr: 0.0001
+    ppo_epochs: 6
+    clip_ratio: 0.15
+    value_coef: 0.5
+    entropy_coef: 0.005
+  a2c:
+    episodes: 30
+    gamma: 0.99
+    lr: 0.0003
+    value_coef: 0.5
+    entropy_coef: 0.01
+  sac:
+    episodes: 40
+    gamma: 0.99
+    actor_lr: 0.0003
+    critic_lr: 0.0003
+    batch_size: 128
+    buffer_size: 200000
+    alpha: 0.2
+    tau: 0.005
+  td3:
+    episodes: 40
+    gamma: 0.99
+    actor_lr: 0.0001
+    critic_lr: 0.001
+    batch_size: 128
+    buffer_size: 200000
+    tau: 0.005
+    policy_delay: 2
+    exploration_noise: 0.1
+    policy_noise: 0.2
+    noise_clip: 0.5

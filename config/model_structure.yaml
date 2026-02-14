@@ -1,0 +1,46 @@
+model_structure:
+  DecoderOnly:
+    d_model: 64
+    nhead: 4
+    num_layers: 6
+    dim_feedforward: 512
+    dropout: 0.1
+  LSTM:
+    hidden_dim: 128
+    num_layers: 4
+    dropout: 0.1
+  GRU:
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.1
+  TransformerEncoder:
+    d_model: 64
+    nhead: 4
+    num_layers: 3
+    dim_feedforward: 256
+    dropout: 0.1
+    max_len: 5000
+  TCN:
+    channels: [64, 64, 64]
+    kernel_size: 3
+    dropout: 0.1
+  GBDT:
+    model: "GradientBoosting"
+    n_estimators: 1000
+    learning_rate: 0.1
+    max_depth: 5
+    subsample: 1.0
+    early_stopping:
+      n_iter_no_change: 100
+      validation_fraction: 0.1
+      tol: 0.0001
+  MSKF:
+    transition: [[0.97, 0.03], [0.03, 0.97]]
+    a: [1.0, 1.0]
+    q_scale: [0.1, 5.0]
+    r_scale: [0.5, 2.0]
+    init_state: 0.0
+    init_var_scale: 1.0
+  IGA_SVR:
+    generations: 30
+    population_size: 30

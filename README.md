@@ -51,13 +51,9 @@ python3 main.py test --model Transformer --stock_target 2884.TW --stock_pool 288
 ## Project Structure
 ```text
 project_root/
-|-- base/                 # Core components
-|   |-- base_data.py      # Data base class
-|   |-- base_trainer.py   # Training base class
-|   |-- base_testor.py    # Backtesting base class
-|
 |-- configs/              # Model configs
 |   |-- Transformer.json
+|-- config/               # StockAI migrated YAML configs
 |
 |-- results/              # Outputs
 |   |-- {model}-temp/     # Checkpoints
@@ -65,11 +61,16 @@ project_root/
 |
 |-- scrape/
 |   |-- scrape.py         # Industry stock scraping helper
+|-- sa_models/            # Migrated StockAI model family
+|-- rl/                   # Migrated RL modules
+|-- sentiment/            # Sentiment utilities
+|-- stockai_main.py       # Migrated StockAI app entrypoint
 |
-|-- models.py             # Model definitions
-|-- datas.py              # Data preparation
-|-- trainers.py           # Training implementations
-|-- backtestors.py        # Backtesting implementations
-|-- main.py               # Entrypoint
+|-- main.py               # Transformer pipeline entrypoint
+|-- datas.py              # Transformer data pipeline
+|-- models.py             # Transformer model definitions
+|-- trainers.py           # Transformer training implementation
+|-- backtestors.py        # Transformer backtesting implementation
+|-- base/                 # Transformer base abstractions
 |-- README.md
 ```

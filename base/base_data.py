@@ -50,33 +50,31 @@ class BaseData:
         if cache_path.exists():
             cached = pd.read_csv(cache_path, index_col=0, parse_dates=True)
             if not cached.empty:
-                return cached
+                return self._normalize_datetime_index(cached)
 
         last_exc = None
         for attempt in range(3):
             try:
-                data = yf.download(
-                    self.stock,
+                ticker = yf.Ticker(self.stock)
+                data = ticker.history(
                     start=self.start_date,
                     end=self.end_date,
                     interval="1d",
                     auto_adjust=False,
-                    progress=False,
-                    threads=False,
                 )
                 if data.empty:
                     raise ValueError(f"No price data fetched for {self.stock}.")
 
-                if isinstance(data.columns, pd.MultiIndex):
-                    data = self._normalize_yf_columns(data)
-                else:
-                    data.columns = [str(c).strip() for c in data.columns]
+                data.columns = [str(c).strip() for c in data.columns]
+                if "Adj Close" not in data.columns and "Close" in data.columns:
+                    data["Adj Close"] = data["Close"]
 
                 required = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
                 missing = [c for c in required if c not in data.columns]
                 if missing:
                     raise ValueError(f"Missing columns for {self.stock}: {missing}")
 
+                data = self._normalize_datetime_index(data)
                 data.to_csv(cache_path, index=True)
                 return data
             except Exception as exc:
@@ -87,6 +85,7 @@ class BaseData:
         # Secondary provider fallback for when Yahoo blocks/rate-limits.
         try:
             data = self._fetch_from_stooq()
+            data = self._normalize_datetime_index(data)
             data.to_csv(cache_path, index=True)
             return data
         except Exception as exc:
@@ -95,27 +94,11 @@ class BaseData:
         if cache_path.exists():
             cached = pd.read_csv(cache_path, index_col=0, parse_dates=True)
             if not cached.empty:
-                return cached
+                return self._normalize_datetime_index(cached)
 
         raise ValueError(
             f"Download failed and no valid cache found for {self.stock} at {cache_path}."
         ) from last_exc
-
-    def _normalize_yf_columns(self, data: pd.DataFrame) -> pd.DataFrame:
-        required = {"Open", "High", "Low", "Close", "Adj Close", "Volume"}
-        levels = data.columns.nlevels
-
-        # yfinance may place OHLCV on level 0 or level 1 depending version/options.
-        for level in range(levels):
-            candidate = list(data.columns.get_level_values(level))
-            candidate = [str(c).strip() for c in candidate]
-            if required.issubset(set(candidate)):
-                data.columns = candidate
-                return data
-
-        # Fallback: flatten all levels; caller will raise clear missing-columns error if still invalid.
-        data.columns = ["_".join([str(part).strip() for part in col]) for col in data.columns]
-        return data
 
     def _fetch_from_stooq(self) -> pd.DataFrame:
         symbol = quote(self.stock.lower())
@@ -142,6 +125,13 @@ class BaseData:
             raise ValueError(f"Stooq missing columns for {self.stock}: {missing}")
 
         return data[required]
+
+    def _normalize_datetime_index(self, data: pd.DataFrame) -> pd.DataFrame:
+        data = data.copy()
+        data.index = pd.to_datetime(data.index)
+        if isinstance(data.index, pd.DatetimeIndex) and data.index.tz is not None:
+            data.index = data.index.tz_localize(None)
+        return data
 
     def _create_var_target(self) -> None:
         self.data["do"] = self.data["Open"].pct_change() * 100
